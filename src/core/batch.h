@@ -19,7 +19,9 @@ struct BatchSpec {
 };
 
 constexpr int kMaxBatchCases = 100'000;
-constexpr std::size_t kMaxBatchNodes = 50'000'000;  // cases * (elements + 1): ~400 MB of results
+// cases * (elements + 1). The benchmark holds two result buffers (reference + output),
+// so this bounds result memory at about 2 x 200 MB = 400 MB.
+constexpr std::size_t kMaxBatchNodes = 25'000'000;
 
 // Shared between a running computation and whoever controls it (UI job, CLI).
 struct RunControl {

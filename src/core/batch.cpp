@@ -103,7 +103,13 @@ void runParallel(const std::vector<RodProblem>& cases, int workers, BatchResult&
 
     std::vector<std::thread> pool;
     pool.reserve(static_cast<std::size_t>(workers));
-    for (int w = 0; w < workers; ++w) pool.emplace_back(worker);
+    try {
+        for (int w = 0; w < workers; ++w) pool.emplace_back(worker);
+    } catch (...) {  // thread creation failed: stop and join the ones already running before unwinding
+        stop = true;
+        for (auto& t : pool) t.join();
+        throw;
+    }
     for (auto& t : pool) t.join();
     if (firstError) std::rethrow_exception(firstError);
 }
@@ -165,7 +171,7 @@ BenchmarkReport runBenchmark(const BenchmarkConfig& config, RunControl* control,
     serial.speedup = serial.efficiency = 1.0;
     report.rows.push_back(serial);
 
-    report.agreement_ok = true;
+    report.agreement_ok = serial.max_abs_diff_C <= kAgreementToleranceC;
     for (int p = 1; p <= maxWorkers; ++p) {
         TimingRow row;
         row.variant = "pool";

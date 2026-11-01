@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Unified Engineering Workbench - Technical Report</title>
+<link rel="stylesheet" href="report.css"></head>
+<body>
+
+<h1>Unified Engineering Workbench &mdash; Technical Report</h1>
+<p class="meta">PASS Science Works R&amp;D Internship 2026-27 common assignment &middot; Candidate {{CANDIDATE_ID}} &middot; build {{COMMIT}} &middot; Windows 11 x64, C++17 &middot; all numbers below are produced by the C++ code and stored in <code>results/</code></p>
+
+<h2>1. Design choices</h2>
+<div class="two">
+<div>
+<p><b>Architecture.</b> A C++17 core library (<code>src/core</code>: thermal FEA, batch pool, STL/CSV parsers, backprop, device mocks, CSV/JSON writers) has no UI or network dependency and is unit-tested directly. A thin transport layer (<code>src/app</code>) uses cpp-httplib to serve the UI and map <code>/api/*</code> to core calls on <code>127.0.0.1</code> only (cross-origin requests refused). <code>Launch.exe</code> starts that server on a free port, opens the default browser and shows a small &ldquo;running / stop&rdquo; window. A CLI (<code>uew_cli</code>) drives the same core to regenerate every file in <code>results/</code>.</p>
+<p><b>Why a browser UI.</b> three.js gives robust 3D interaction (rotate, pan, zoom, picking) with little code, and Edge ships with Windows 11. Libraries and fonts are vendored, so nothing is fetched at runtime.</p>
+</div>
+<div>
+<p><b>One-click delivery.</b> Static linking (MinGW-w64 GCC 16.2, <code>-static</code>) means <code>Launch.exe</code> imports only Windows system DLLs &mdash; no VC++ redistributable, installer, admin rights or first-run build. Logs: <code>logs/workbench.log</code>. Measured launch-to-server-ready <b>61 ms</b>; launch-to-UI-ready <b>1.45 s</b> including browser start (E2E log).</p>
+<p><b>Responsiveness and safe completion.</b> The benchmark runs as a job on its own thread; the UI polls progress (completed solves / total, stage) every 250 ms and can <b>cancel</b>. Workers check an atomic flag between solves; a cancelled or failed job publishes nothing, so the previous result stays intact. Only one compute job runs at a time (HTTP 409 otherwise) so timings are not disturbed.</p>
+<p><b>Errors.</b> Exceptions map to HTTP 400 (bad input, with parameter or file line), 409 (state), 500; the UI shows the message next to the field and in an <code>aria-live</code> status bar.</p>
+</div>
+</div>
+
+<h2>2. Interface and testing</h2>
+<p>One page with five keyboard-accessible tabs (WAI-ARIA tab pattern): <b>Geometry</b>, <b>Thermal Analysis</b>, <b>Performance</b>, <b>Hardware</b>, and <b>Backprop check</b>. Inputs have visible labels with units, client-side checks for instant feedback and authoritative C++ validation; plots have titled axes with units and legends; exports are CSV/JSON. UI rules from the <code>ui-ux-pro-max</code> checklist: &ge;44 px targets, visible focus rings, 16 px base text, viridis (colour-blind-safe) colour map, reduced-motion respected, keyboard camera buttons and a hottest/coldest-node text summary as the non-visual fallback for the 3D view.</p>
+<table>
+<tr><th>Test suite (all pass on the submitted build)</th><th class="n">Checks</th><th>Covers</th></tr>
+<tr><td><code>ctest</code> &mdash; <code>tests/test_core.cpp</code> + sample files</td><td class="n">31</td><td>Numerical (BCs, nodal exactness, midpoint error = qh&sup2;/8k, order 2, energy balance, gradients vs FD), positive and negative parsing (NaN, Inf, text, extra/missing column, duplicate id, binary STL, quad facet, truncation, empty), pool agreement/order/cancel/exception propagation, NaN-safe agreement, job registry busy/cancel/failure, device timeout recovery</td></tr>
+<tr><td><code>tests/api_smoke_test.py</code></td><td class="n">31</td><td>Every HTTP route, 13 malformed fixtures &rarr; 400, concurrent job &rarr; 409, cancel &rarr; no result, cross-origin and DNS-rebinding &rarr; 403</td></tr>
+<tr><td><code>tests/e2e_walkthrough.py</code> (Playwright + Edge)</td><td class="n">12</td><td>Full UI flow incl. node inspection, error display, UI responsive during benchmark, cancel, device recovery; no console errors; produces the screenshot walkthrough (Appendix B)</td></tr>
+<tr><td><code>scripts/file_size_test.ps1</code>, <code>tests/upload_size_test.py</code></td><td class="n">11</td><td>Tested limits: 500k-triangle STL (118 MB) 2.2 s end-to-end; 2M-node CSV 5.4 s; 2,000,001 nodes rejected</td></tr>
+</table>
+
+<h2>3. CAD / ANSYS data visualisation (Task B)</h2>
+<p><b>Formats.</b> ASCII STL (strict grammar, exactly three finite vertices per facet; binary STL detected and explained) and nodal CSV <code>node_id,x_m,y_m,z_m,temperature_C</code> (exact header, five fields, positive unique ids, finite values, T &ge; &minus;273.15 &deg;C; BOM/CRLF tolerated). Errors name the line and value, e.g. <i>&ldquo;Line 3: temperature_C value 'NaN' is not a finite number&rdquo;</i>. <b>Samples</b> (<code>data/PROVENANCE.md</code>): a self-created 60&times;40&times;36 mm heat-sink STL (64 triangles, millimetres) and a <b>synthetic</b> 1065-node temperature field on the same geometry from a fin-equation formula &mdash; labelled synthetic, not an ANSYS export. The viewer converts STL units (mm/m/in) to metres so both overlay; nodes are coloured with a &deg;C legend and can be clicked to show id, x/y/z (m) and T (&deg;C).</p>
+
+<!-- ======================================================== PAGE 2 -->
+<h2 class="page">4. Thermal FEA and verification (Task C)</h2>
+<p><b>Problem.</b> &minus;d/dx(kA dT/dx) = qA on 0 &lt; x &lt; L with L = 1 m, A = 10<sup>&minus;4</sup> m&sup2;, k = 10 W/(m&middot;K), q = 10<sup>4</sup> W/m&sup3;, T(0) = 100 &deg;C, T(L) = 20 &deg;C. <b>Assumptions:</b> steady state, constant k, A, q, insulated lateral surface (heat leaves only through the ends), 1D. SI units; &deg;C and K are interchangeable because only differences enter.</p>
+<p><b>Formulation.</b> Weak form &int;kA T&prime;v&prime;dx = &int;qA v dx with two-node linear elements of length h = L/N gives element matrices <b>k<sub>e</sub> = (kA/h)[1 &minus;1; &minus;1 1]</b> and <b>f<sub>e</sub> = (qAh/2)[1; 1]</b>, assembled into a symmetric tridiagonal system. <b>Boundary conditions:</b> for each prescribed node p, K(j,p)&middot;T<sub>p</sub> is moved to the neighbour&rsquo;s right-hand side, row and column p are zeroed and K(p,p) = 1, F(p) = T<sub>p</sub> (symmetry preserved). Solved by the Thomas algorithm, O(N). The FE error is evaluated at <b>element midpoints with FE interpolation</b> (T<sub>e</sub> + T<sub>e+1</sub>)/2 against T<sub>exact</sub>(x) = 100 &minus; 80x/L + [q/(2k)] x(L &minus; x).</p>
+<figure><img src="../../results/plots/thermal_solution.svg" style="width:100%"><figcaption>Fig. 1. (a) FE nodal temperatures for N = 10, 20, 40, 80 on the exact curve (peak 188.2 &deg;C at x = 0.42 m). (b) Pointwise error T<sub>FE</sub>(x) &minus; T<sub>exact</sub>(x): zero at every node, largest at element midpoints. Data: <code>results/thermal/thermal_nodes.csv</code>, <code>thermal_error_profile.csv</code>.</figcaption></figure>
+<div class="two">
+<div>
+<table>
+<tr><th class="n">N</th><th class="n">h (m)</th><th class="n">max nodal err (&deg;C)</th><th class="n">max midpoint err (&deg;C)</th><th class="n">order</th></tr>
+<tr><td class="n">10</td><td class="n">0.1</td><td class="n">5.7e&minus;14</td><td class="n">1.250000</td><td class="n">&ndash;</td></tr>
+<tr><td class="n">20</td><td class="n">0.05</td><td class="n">2.6e&minus;13</td><td class="n">0.312500</td><td class="n">2.000</td></tr>
+<tr><td class="n">40</td><td class="n">0.025</td><td class="n">7.7e&minus;13</td><td class="n">0.078125</td><td class="n">2.000</td></tr>
+<tr><td class="n">80</td><td class="n">0.0125</td><td class="n">1.1e&minus;12</td><td class="n">0.019531</td><td class="n">2.000</td></tr>
+</table>
+<p><b>Analytical check.</b> Linear interpolation of a parabola of curvature &minus;q/k errs by (q/k)h&sup2;/8 at the midpoint: 10<sup>4</sup>&middot;0.1&sup2;/80 = 1.25 &deg;C for N = 10, matched to 10<sup>&minus;12</sup>; halving h divides it by 4 (order 2.000). <b>Energy balance:</b> nodal reactions give 0.42 W out at x = 0 and 0.58 W at x = L, total 1.000 W = qAL (= &plusmn;kA dT/dx of the exact solution).</p>
+</div>
+<figure><img src="../../results/plots/thermal_convergence.svg" style="width:100%"><figcaption>Fig. 2. Mesh convergence (<code>thermal_convergence.csv</code>).</figcaption></figure>
+</div>
+<p><b>Debugging insight.</b> Measured only at the nodes, the error is ~10<sup>&minus;13</sup> for every mesh and does not converge &mdash; it looks like a broken test. In 1D with linear elements the FE solution is <i>nodally exact</i> (the Green&rsquo;s function of &minus;d&sup2;/dx&sup2; is piecewise linear, so it lies in the FE space); all discretisation error is between nodes, which is why the midpoint metric is required. The nodal error even <i>grows</i> slightly with N: that is floating-point round-off over more unknowns, not discretisation error. <b>Learning:</b> see <code>docs/thermal_fea.md</code> {{LEARNING_NOTE}}</p>
+
+<!-- ======================================================== PAGE 3 -->
+<h2 class="page">5. Multicore performance (Task D)</h2>
+<p><b>Workload.</b> Reproducible batch: seed 20261101, 400 independent rods, N = 20,000 elements each (8 M unknowns per pass); k ~ U[5, 50] W/(m&middot;K), q ~ U[10<sup>3</sup>, 5&times;10<sup>4</sup>] W/m&sup3;, other data as Task C. The generator maps raw <code>mt19937_64</code> output (fully specified by the C++ standard) to [0,1) itself, because <code>uniform_real_distribution</code> is implementation-defined and would give different cases on other compilers. <b>Methods.</b> Serial loop vs a bounded pool of p <code>std::thread</code>s (p = 1&ndash;4, capped at logical CPUs) taking case indices from an atomic counter; each result is written to its own slot, so output order equals input order. Both use the identical solver. <b>Timing.</b> 1 untimed warm-up of each variant, then 5 timed repetitions; <code>steady_clock</code> wraps only the solve loop (case generation, result allocation, file I/O and rendering excluded). <b>Agreement:</b> every value of every pool run is compared with the serial reference; max |&Delta;T| must be &le; 10<sup>&minus;8</sup> &deg;C. Output buffers are NaN-filled before each run so a slot that was not rewritten would fail the check.</p>
+<table>
+<tr><th>CPU</th><td>13th Gen Intel Core i7-13650HX (hybrid: 6 P-cores + 8 E-cores), 14 physical / 20 logical</td><th>RAM</th><td>23.8 GiB</td></tr>
+<tr><th>OS</th><td>Windows 11 25H2 (build 26200), Balanced power plan, on AC</td><th>Compiler</th><td>GCC 16.2.0 (MinGW-w64), <code>-O3 -DNDEBUG -static</code></td></tr>
+</table>
+<table>
+<tr><th>variant</th><th class="n">median (ms)</th><th class="n">speed-up T<sub>1</sub>/T<sub>p</sub></th><th class="n">efficiency</th><th class="n">max |&Delta;T| (&deg;C)</th></tr>
+{{PERF_ROWS}}
+</table>
+<p>T<sub>1</sub> = serial median. Agreement: <span class="ok">{{AGREEMENT}}</span>, because each case runs the same instructions regardless of thread. Raw samples: <code>results/performance/benchmark_samples.csv</code>.</p>
+<figure><img src="../../results/plots/benchmark.svg" style="width:82%"><figcaption>Fig. 3. (a) Measured speed-up vs ideal. (b) All five timed runs per variant with medians.</figcaption></figure>
+<h3>Two measured problems, each fixed by testing one hypothesis</h3>
+<ul>
+<li><b>Allocation contention.</b> The first version allocated matrix, RHS and result vectors inside every solve: p = 4 reached only <b>1.26&times;</b> (slower than p = 3) and 40 &times; 200,000-element cases ran <i>slower</i> in parallel (0.69&times;). Hypothesis: page faults and heap contention dominate the timed region. Fix: one reusable workspace per worker and outputs allocated before timing &rarr; p = 4 <b>3.80&times;</b>, and serial also fell 169 &rarr; 149 ms.</li>
+<li><b>Bimodal p = 4 timings</b> (39 ms or ~135 ms, switching mid-run; p &le; 3 unaffected). Hypothesis: Windows 11 EcoQoS power throttling moves a background process onto E-cores at low clock. Opting out with <code>SetProcessInformation(ProcessPowerThrottling)</code> and changing nothing else made <b>20/20</b> p = 4 samples 38&ndash;40 ms. Evidence: <code>results/performance/allocation_contention_before_after.md</code>.</li>
+</ul>
+<p><b>Overheads and limitations.</b> Pool p = 1 differs from the plain loop by {{P1_DELTA}} (thread start/join, the atomic counter and lost inlining cost a little; run-to-run noise is of similar size). Efficiency is {{EFF2}} at p = 2 and {{EFF4}} at p = 4. What would erode it at higher p: each solve streams ~640 kB through memory (shared bandwidth), threads land on mixed P- and E-cores, and the last few cases leave workers idle; the cases are many and equal-sized, so load balance is good. Serial samples ranged {{SERIAL_RANGE}} ms in this run; earlier runs varied up to &plusmn;20 % (a lone thread migrating between P- and E-cores), so medians of five are reported. Results are specific to this laptop; no claim is made for other hardware, and p &gt; 4 was not measured by design.</p>
+
+<!-- ======================================================== PAGE 4-5 -->
+<h2 class="page">6. Embedded-system integration design (Task E)</h2>
+<figure><img src="../../src/web/block_diagram.svg" style="width:92%"><figcaption>Fig. 4. Host-connected workbench (design). Boards are assumed models; device behaviour is simulated in this prototype.</figcaption></figure>
+<table>
+<tr><th>Link</th><th>Connector / signals</th><th>Voltage</th><th>Level shifting</th><th>Ownership / notes</th></tr>
+<tr><td>Host &harr; hub &harr; boards</td><td>USB 2.0; Mini-B (Nucleo ST-LINK), Micro-B (Arty FT2232H), Micro-B (J-Link)</td><td>5 V VBUS</td><td>n/a</td><td>Powered hub so three boards do not overload a laptop port; per-port overcurrent.</td></tr>
+<tr><td>Nucleo-F446RE power, I/O</td><td>USB 5 V &rarr; on-board 3.3 V regulator; VCP = USART2, 115200 8N1</td><td>3.3 V (FT pins 5 V tolerant)</td><td>&ndash;</td><td>Telemetry via virtual COM port.</td></tr>
+<tr><td>Arty A7-35T power, I/O</td><td>USB 5 V (7&ndash;15 V jack for heavy designs); FT2232H ch.A JTAG, ch.B UART</td><td>3.3 V banks, 1.0 V VCCINT</td><td>&ndash;</td><td>Not 5 V tolerant. Its JTAG is owned by the on-board FTDI.</td></tr>
+<tr><td>J-Link &rarr; Nucleo MCU</td><td>10-pin 1.27 mm Cortex Debug via 2&times;5 breakout to Morpho: PA13 TMS/SWDIO, PA14 TCK/SWCLK, PA15 TDI, PB3 TDO/SWO, NRST, VTref, GND</td><td>3.3 V</td><td>None (3.3 V probe, 3.3 V target)</td><td><b>Probe drives TCK, TMS, TDI, nRESET; target drives TDO and supplies VTref.</b> Remove Nucleo CN2 jumpers to release the on-board ST-LINK. One probe per TAP.</td></tr>
+<tr><td>Optional MCU &harr; FPGA</td><td>USART1 PA9/PA10 &harr; Pmod JA 1/2 + GND wire</td><td>3.3 V &harr; 3.3 V</td><td>Not needed; 100 &Omega; series R. A 5 V MCU would need e.g. TXS0108E</td><td>Artix-7 I/O are not 5 V tolerant.</td></tr>
+<tr><td>Grounding</td><td colspan="4">Single reference through the hub; a GND wire with every board-to-board signal; no second earthed supply path without checking for ground loops.</td></tr>
+</table>
+<p><b>Pinout assumptions to verify</b> against ST UM1724, the Digilent Arty A7 reference manual and SEGGER UM08001 before any wiring; they have not been checked on hardware. <b>Why the JTAG adapter is not a compute board:</b> it is a debug interface that shifts bits through a target&rsquo;s Test Access Port to halt the CPU, read/write memory, program flash or load a bitstream. It runs no workload, does not power the target, and only works with a specific target, voltage (VTref) and pinout. The three devices share neither connector (Mini-B / Micro-B / 10-pin), protocol (UART, JTAG/SWD, JTAG-over-FTDI) nor core voltage (3.3 V vs 1.0 V), so the software models three device types, not interchangeable boards.</p>
+<p><b>C++ mocks</b> (<code>src/core/hardware.*</code>): a <code>DeviceAdapter</code> interface (discover, capabilities, connect/disconnect, one <code>TelemetryFrame</code> message type) with MCU, FPGA and JTAG implementations, plus a <code>DeviceManager</code> that retries a read up to three times on a (simulated 250 ms) timeout. <b>Recoverable failures shown in the UI:</b> a transient timeout recovers on attempt 2; a persistent fault exhausts retries, sets the device to <i>error</i>, refuses reads, and <b>Reconnect</b> recovers it. Every response carries <code>simulated: true</code> and every UI state reads &ldquo;(simulated)&rdquo;. <b>Safe integration plan:</b> confirm the table from manuals &rarr; power each board alone and measure rails &rarr; replace one mock at a time behind the same interface (Win32 COM port; SEGGER SDK) &rarr; wire J-Link unpowered, GND first, check VTref = 3.3 V, start with a read-only IDCODE scan &rarr; board-to-board link last, with series resistors &rarr; ESD strap, no hot-plugging the debug cable. <b>Limitations:</b> no real enumeration, serial, JTAG, firmware or bitstream operations; telemetry is synthetic.</p>
+
+<h2>7. Handwritten backpropagation and C++ check (Task F)</h2>
+<div class="two">
+<div>
+<p>x = 1, y = 2, h = tanh(wx + b), &ycirc; = vh + c, J = &frac12;(&ycirc; &minus; y)&sup2;, start w = 0.5, b = 0, v = 1, c = 0, &eta; = 0.1. The handwritten derivation is Appendix A. The C++ implementation (<code>src/core/backprop.cpp</code>) writes every derivative by hand (no autodiff):</p>
+<table>
+<tr><th>&theta;</th><th class="n">&part;J/&part;&theta; (chain rule)</th><th class="n">central diff. (&epsilon; = 10<sup>&minus;6</sup>)</th><th class="n">|error|</th><th class="n">after 1 step</th></tr>
+<tr><td>w</td><td class="n">&minus;1.209464475</td><td class="n">&minus;1.209464475</td><td class="n">1.1e&minus;10</td><td class="n">0.620946448</td></tr>
+<tr><td>b</td><td class="n">&minus;1.209464475</td><td class="n">&minus;1.209464475</td><td class="n">1.1e&minus;10</td><td class="n">0.120946448</td></tr>
+<tr><td>v</td><td class="n">&minus;0.710682047</td><td class="n">&minus;0.710682047</td><td class="n">5.3e&minus;11</td><td class="n">1.071068205</td></tr>
+<tr><td>c</td><td class="n">&minus;1.537882843</td><td class="n">&minus;1.537882843</td><td class="n">1.1e&minus;10</td><td class="n">0.153788284</td></tr>
+</table>
+<p>Forward: z = 0.5, h = 0.462117157, &ycirc; = 0.462117157, J = 1.182541819. All errors &le; 10<sup>&minus;5</sup> <span class="ok">(pass)</span>. All gradients are negative because &ycirc; &lt; y and raising any parameter raises &ycirc;, so descent increases all four; c moves most (&part;&ycirc;/&part;c = 1), w and b least (scaled by v(1 &minus; h&sup2;) = 0.786).</p>
+</div>
+<div>
+<figure><img src="../../results/plots/backprop_loss.svg" style="width:100%"><figcaption>Fig. 5. Loss over 100 steps after the start (<code>backprop_loss.csv</code>).</figcaption></figure>
+<p>The loss falls from 1.18 to 0.686 after one step, 1.0&times;10<sup>&minus;2</sup> at step 10 and 1.7&times;10<sup>&minus;20</sup> at step 100: a roughly constant factor (~0.6) per step, i.e. linear convergence, straight on a log axis. It reaches zero because one sample with four free parameters can be fitted exactly &mdash; this shows the optimiser works, not that the model generalises.</p>
+</div>
+</div>
+
+<!-- ======================================================== PAGE 6 -->
+<h2>8. Test outcomes, evidence and limitations</h2>
+<table>
+<tr><th>Requirement</th><th>Evidence (in the ZIP)</th></tr>
+<tr><td>One-click launch, editor config</td><td><code>Launch.exe</code>; <code>.vscode/tasks.json</code> (built-in task) and <code>launch.json</code> (needs ms-vscode.cpptools); <code>evidence/launch_exe_dll_dependencies.txt</code></td></tr>
+<tr><td>Source build</td><td><code>CMakeLists.txt</code>, <code>CMakePresets.json</code>, README &sect;5; <code>docs/dependencies.md</code> (pinned versions, licences, SHA-256)</td></tr>
+<tr><td>Raw data and plots</td><td><code>results/thermal|performance|backprop/*.csv|json</code>, <code>results/plots/*.svg|png</code> (plots drawn only from C++ output)</td></tr>
+<tr><td>Walkthrough with logs</td><td><code>evidence/walkthrough/*.png</code> + <code>walkthrough_log.txt</code> (Appendix B) {{VIDEO_NOTE}}</td></tr>
+<tr><td>Version control</td><td><code>evidence/git/repository.bundle</code> (<code>git clone repository.bundle</code>), <code>commit_log.txt</code> (Appendix C)</td></tr>
+<tr><td>AI use, ownership, effort</td><td><code>docs/ai_use_log.md</code> (12 groups of incorrect AI output found and fixed), <code>docs/ownership_statement.md</code>, <code>docs/effort_log.md</code></td></tr>
+</table>
+<h3>Known limitations</h3>
+<ul>
+<li>Packaged app targets Windows 11 x64 only. It was run from a freshly extracted ZIP on the development PC with no compiler on PATH; {{CLEAN_MACHINE_NOTE}}</li>
+<li>The UI opens in the default browser rather than a native window; closing the launcher window stops the server.</li>
+<li>Hardware is simulated; part numbers and pinouts are design assumptions awaiting datasheet review.</li>
+<li>The sample CSV is synthetic; there is no mesh-to-result registration (not required).</li>
+<li>Thermal solver: 1D, steady, constant properties, Dirichlet ends only. Benchmark: single-thread variance on a hybrid CPU; p &gt; 4 not measured.</li>
+<li>Upload cancellation stops the UI waiting; the C++ parse of that request completes and is discarded (safe, not pre-emptive).</li>
+</ul>
+<h3>AI use (summary)</h3>
+<p>Claude Code (Claude Opus 5.5) generated most code and documentation drafts under my direction; an earlier ChatGPT prototype was used only as a reference. Verification was independent of the AI: closed-form theory, finite differences, 85 automated checks and repeated measurements. The most consequential AI errors were performance-related (per-solve allocation; unrecognised power throttling) and were caught only by measuring; others included a NaN-blind agreement check, an 8 KB upload limit, a wrong probe-voltage assumption and first-person drafts describing experiences I had not had. Full log with verbatim prompts: <code>docs/ai_use_log.md</code>.</p>
+</body></html>

@@ -94,7 +94,7 @@ def performance_steps(page, out):
     log("PASS benchmark: " + page.locator("#bench-table p").first.inner_text())
     shot(page, out, "07_benchmark_results", "timings, speed-up, efficiency, agreement, system info")
 
-    page.fill("#b-cases", "2000")  # long enough to cancel mid-run, within the result-memory cap
+    page.fill("#b-cases", "1200")  # long enough to cancel mid-run, within the result-memory cap
     page.click("#bench-start")
     page.wait_for_timeout(500)
     page.click("#bench-cancel")
@@ -140,6 +140,9 @@ def main():
             page.goto(url)
             expect(page.locator("#status")).to_contain_text("Workbench ready", timeout=20_000)
             log(f"PASS UI ready at {url}")
+            timing = page.evaluate("fetch('/api/system').then(r => r.json())")
+            log(f"launch-to-server-ready {timing['launch_to_server_ready_ms']:.0f} ms, "
+                f"launch-to-UI-ready {timing['launch_to_ui_ready_ms']:.0f} ms (headless Edge, includes browser start)")
             shot(page, out, "01_launch_ready", "backend connected, Geometry view")
             geometry_steps(page, out)
             thermal_steps(page, out)

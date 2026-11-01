@@ -6,8 +6,10 @@
 namespace uew {
 namespace {
 
-// Full double precision so exported CSVs reproduce the solver output exactly.
+// Full double precision so exported CSVs reproduce the solver output exactly;
+// non-finite values become an empty cell rather than "nan"/"inf".
 std::string num(double v) {
+    if (!std::isfinite(v)) return "";
     char buffer[40];
     std::snprintf(buffer, sizeof buffer, "%.17g", v);
     return buffer;
@@ -19,7 +21,11 @@ std::string csvRow(std::initializer_list<std::string> cells) {
     return row + "\n";
 }
 
+// Undefined (NaN) when the errors are at round-off level, e.g. q = 0 where linear
+// elements are exact everywhere and the "order" would be noise.
 double observedOrder(const StudyEntry& coarse, const StudyEntry& fine) {
+    constexpr double kRoundOffC = 1e-10;
+    if (coarse.error.max_midpoint_error_C < kRoundOffC || fine.error.max_midpoint_error_C < kRoundOffC) return NAN;
     const double ratio = static_cast<double>(fine.problem.elements) / coarse.problem.elements;
     return std::log(coarse.error.max_midpoint_error_C / fine.error.max_midpoint_error_C) / std::log(ratio);
 }

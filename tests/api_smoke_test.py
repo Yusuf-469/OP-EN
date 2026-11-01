@@ -84,7 +84,7 @@ def run(base):
     status, body = call(base, "GET", f"/api/jobs/{job}/files/benchmark_summary.csv")
     check("benchmark CSV export", status == 200 and body.startswith(b"variant,workers"))
 
-    status, body = call(base, "POST", "/api/benchmark?cases=2000&mesh=20000&workers=4")
+    status, body = call(base, "POST", "/api/benchmark?cases=1200&mesh=20000&workers=4")
     job = json.loads(body)["job_id"]
     time.sleep(0.3)
     call(base, "POST", f"/api/jobs/{job}/cancel")
@@ -97,6 +97,8 @@ def run(base):
 
     status, body = call(base, "GET", "/api/health", headers={"Origin": "http://evil.example"})
     check("cross-origin request refused", status == 403)
+    status, body = call(base, "GET", "/api/system", headers={"Host": "rebind.example:80"})
+    check("DNS-rebinding Host header refused", status == 403)
     status, body = call(base, "GET", "/api/system")
     check("system info", status == 200 and json.loads(body)["system"]["logical_cpus"] >= 1)
 

@@ -1,6 +1,7 @@
 #include "geometry_io.h"
 
 #include <algorithm>
+#include <cctype>
 #include <charconv>
 #include <cmath>
 #include <unordered_set>
@@ -20,11 +21,16 @@ void checkSize(std::string_view text, const char* what) {
 
 // Strict, locale-independent number parsing: the whole token must be a finite number.
 bool parseFinite(std::string_view token, double& out) {
-    if (!token.empty() && token.front() == '+') token.remove_prefix(1);
+    // from_chars rejects a leading '+'; allow it only directly before a digit or '.' (so "+-5" stays invalid).
+    if (token.size() > 1 && token[0] == '+' && (std::isdigit(static_cast<unsigned char>(token[1])) || token[1] == '.'))
+        token.remove_prefix(1);
     const char* end = token.data() + token.size();
     const auto [ptr, ec] = std::from_chars(token.data(), end, out);
     return ec == std::errc() && ptr == end && std::isfinite(out);
 }
+
+// Vertices are stored as float for rendering; keep well inside float range.
+constexpr double kMaxCoordinate = 1e30;
 
 bool isSpace(char c) { return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\f' || c == '\v'; }
 
@@ -72,6 +78,8 @@ public:
             if (!parseFinite(tok, component))
                 throw ParseError(line(), std::string(what) + " component " + shown(tok) +
                                              " is not a finite number (NaN/Inf and text are rejected).");
+            if (std::abs(component) > kMaxCoordinate)
+                throw ParseError(line(), std::string(what) + " component " + shown(tok) + " is too large (|value| > 1e30).");
         }
         return v;
     }

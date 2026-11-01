@@ -144,8 +144,7 @@ TelemetryOutcome DeviceManager::readWithRetry(const std::string& id) {
             outcome.attempts.push_back({attempt, true, e.what()});
         }
     }
-    device.markError();
-    outcome.attempts.push_back({kMaxAttempts, true, "Retries exhausted; device marked as error. Reconnect to recover."});
+    device.markError();  // retries exhausted; the caller reports it and the user must reconnect
     return outcome;
 }
 

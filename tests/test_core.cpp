@@ -3,6 +3,7 @@
 // A tiny harness is used instead of GoogleTest to keep the build offline and
 // dependency-free.
 
+#include <chrono>
 #include <cmath>
 #include <functional>
 #include <iostream>
@@ -15,6 +16,8 @@
 #include "batch.h"
 #include "geometry_io.h"
 #include "hardware.h"
+#include "job_registry.h"
+#include "report_writers.h"
 #include "thermal_fea.h"
 
 using namespace uew;
@@ -354,6 +357,60 @@ void hardwareTimeoutRecovery() {
     CHECK(manager.readWithRetry("fpga0").ok);
 }
 
+// --------------------------------------------------------- job registry (app)
+JobSnapshot waitUntilFinished(JobRegistry& jobs, const std::string& id) {
+    for (int i = 0; i < 500; ++i) {
+        const auto s = jobs.get(id);
+        if (s && s->state != "running") return *s;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    throw Failure{"job " + id + " did not finish within 5 s"};
+}
+
+void jobsBusyCancelAndFailure() {
+    JobRegistry jobs;
+    const std::string slow = jobs.start("slow", 1, [](RunControl& c, const JobRegistry::StageFn&) -> JobOutput {
+        while (!c.cancel) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        throw Cancelled();
+    });
+    CHECK_THROWS(std::logic_error, jobs.start("other", 1, {}), "already running");  // one job at a time
+    CHECK(jobs.cancel(slow));
+    const JobSnapshot cancelled = waitUntilFinished(jobs, slow);
+    CHECK(cancelled.state == "cancelled" && !cancelled.output);  // no partial result published
+
+    const std::string bad = jobs.start("bad", 1, [](RunControl&, const JobRegistry::StageFn&) -> JobOutput {
+        throw std::runtime_error("boom");
+    });
+    const JobSnapshot failed = waitUntilFinished(jobs, bad);
+    CHECK(failed.state == "failed" && failed.error == "boom" && !failed.output);
+
+    const std::string good = jobs.start("good", 1, [](RunControl&, const JobRegistry::StageFn& stage) {
+        stage("working");
+        return JobOutput{"{\"x\":1}", {{"a.csv", "a\n"}}};
+    });
+    const JobSnapshot done = waitUntilFinished(jobs, good);
+    CHECK(done.state == "done" && done.output && done.output->files.count("a.csv") == 1);
+    CHECK(!jobs.get("nope") && !jobs.cancel("nope"));
+}
+
+// q = 0: FE is exact everywhere, so the observed order is undefined, not noise.
+void convergenceOrderUndefinedAtRoundOff() {
+    RodProblem p;
+    p.heat_generation_W_per_m3 = 0.0;
+    const std::string csv = convergenceCsv(runThermalStudy(p, {10, 20}));
+    CHECK(csv.find("nan") == std::string::npos && csv.find("inf") == std::string::npos);
+    CHECK(csv.back() == '\n' && csv[csv.size() - 2] == ',');  // empty order cell
+}
+
+void parsersRejectSignAndRangeAbuse() {
+    const std::string h = "node_id,x_m,y_m,z_m,temperature_C\n";
+    CHECK_THROWS(ParseError, parseNodalCsv(h + "1,+-5,0,0,1\n"), "x_m value '+-5'");
+    CHECK(parseNodalCsv(h + "1,+5,0,0,1\n").nodes[0].x_m == 5.0);
+    std::string huge = kTetra;
+    huge.replace(huge.find("vertex 1 0 0"), 12, "vertex 1e300 0 0");
+    CHECK_THROWS(ParseError, parseAsciiStl(huge), "too large");
+}
+
 const std::map<std::string, void (*)()>& registry() {
     static const std::map<std::string, void (*)()> tests = {
         {"thermal_boundary_conditions", thermalBoundaryConditions},
@@ -382,6 +439,9 @@ const std::map<std::string, void (*)()>& registry() {
         {"backprop_training", backpropUpdateAndTraining},
         {"hardware_discover_connect", hardwareDiscoverConnectTelemetry},
         {"hardware_timeout_recovery", hardwareTimeoutRecovery},
+        {"jobs_busy_cancel_failure", jobsBusyCancelAndFailure},
+        {"convergence_order_roundoff", convergenceOrderUndefinedAtRoundOff},
+        {"parsers_sign_and_range", parsersRejectSignAndRangeAbuse},
     };
     return tests;
 }

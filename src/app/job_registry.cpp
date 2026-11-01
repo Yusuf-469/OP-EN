@@ -36,7 +36,12 @@ std::string JobRegistry::start(const std::string& kind, std::size_t totalUnits, 
     job->kind = kind;
     job->total = totalUnits;
     jobs_[job->id] = job;
-    threads_.emplace_back([this, job, work = std::move(work)] { execute(job, work); });
+    try {
+        threads_.emplace_back([this, job, work = std::move(work)] { execute(job, work); });
+    } catch (...) {
+        jobs_.erase(job->id);  // otherwise a job that never started would block all later jobs as "running"
+        throw;
+    }
     return job->id;
 }
 
@@ -55,6 +60,9 @@ void JobRegistry::execute(const std::shared_ptr<Job>& job, const Work& work) {
     } catch (const std::exception& e) {
         state = "failed";
         error = e.what();
+    } catch (...) {  // nothing may escape a std::thread (std::terminate)
+        state = "failed";
+        error = "Unknown error in background job.";
     }
     std::lock_guard<std::mutex> lock(mutex_);
     job->state = state;

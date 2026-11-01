@@ -61,7 +61,9 @@ endif()
 
 # ------------------------------------------------------------------- tests
 enable_testing()
-add_executable(uew_tests tests/test_core.cpp)
+# JobRegistry is portable C++ (no HTTP), so it is unit-tested directly.
+add_executable(uew_tests tests/test_core.cpp src/app/job_registry.cpp)
+target_include_directories(uew_tests PRIVATE src/app)
 target_link_libraries(uew_tests PRIVATE uew_core)
 set(UEW_TESTS
   thermal_boundary_conditions thermal_nodal_exactness thermal_midpoint_error_theory
@@ -71,7 +73,8 @@ set(UEW_TESTS
   agreement_detects_nan workspace_solve_matches
   stl_valid stl_malformed csv_valid csv_malformed
   backprop_initial_values backprop_finite_difference backprop_training
-  hardware_discover_connect hardware_timeout_recovery)
+  hardware_discover_connect hardware_timeout_recovery
+  jobs_busy_cancel_failure convergence_order_roundoff parsers_sign_and_range)
 foreach(test_name IN LISTS UEW_TESTS)
   add_test(NAME ${test_name} COMMAND uew_tests ${test_name})
 endforeach()

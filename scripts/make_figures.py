@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "results"
 OUT = RES / "plots"
 COLORS = ["#c4421a", "#2e8540", "#7b3fa0", "#a06d00"]
-plt.rcParams.update({"font.size": 9, "axes.grid": True, "grid.color": "#dde3ea", "svg.fonttype": "none",
+plt.rcParams.update({"font.family": ["Segoe UI", "DejaVu Sans"], "font.size": 9, "axes.grid": True, "grid.color": "#dde3ea", "svg.fonttype": "none",
                      "figure.dpi": 150, "axes.spines.top": False, "axes.spines.right": False})
 
 
@@ -69,6 +69,8 @@ def thermal():
     ax.loglog(h, [mid[0] * (v / h[0]) ** 2 for v in h], "--", color="#8796a5", label="slope 2 reference")
     ax.loglog(h, nod, "s:", color="#c4421a", ms=3, label="max nodal error (round-off)")
     ax.set(xlabel="element size h (m)", ylabel="|error| (°C)", title="Mesh convergence")
+    ax.set_xticks(h, [f"{v:g}" for v in h])  # label the four mesh sizes only; default log ticks overlap
+    ax.minorticks_off()
     ax.legend(fontsize=7)
     save(fig, "thermal_convergence")
 

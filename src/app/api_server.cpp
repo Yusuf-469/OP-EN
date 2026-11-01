@@ -1,4 +1,4 @@
-﻿#include "api_server.h"
+#include "api_server.h"
 
 #include <httplib.h>
 
@@ -6,6 +6,7 @@
 #include <charconv>
 #include <cmath>
 #include <mutex>
+#include <numeric>
 #include <sstream>
 #include <thread>
 
@@ -89,6 +90,9 @@ std::vector<int> meshesFromRequest(const httplib::Request& req) {
         meshes.push_back(n);
     }
     if (meshes.empty() || meshes.size() > 8) throw std::invalid_argument("Give between 1 and 8 mesh sizes.");
+    // The response carries nodes and a sampled error profile per mesh; bound its size.
+    if (std::accumulate(meshes.begin(), meshes.end(), 0L) > 200'000)
+        throw std::invalid_argument("The mesh sizes N must add up to at most 200000 for interactive plotting.");
     return meshes;
 }
 
@@ -117,7 +121,7 @@ struct ApiServer::Impl {
     httplib::Server http;
     std::thread thread;
     int port = 0;
-    double serverReadyMs = -1.0;
+    std::atomic<double> serverReadyMs{-1.0};  // written after the server thread starts
     std::atomic<double> uiReadyMs{-1.0};
     JobRegistry jobs;
     std::mutex hardwareMutex;
@@ -144,7 +148,7 @@ void ApiServer::Impl::routes() {
             JsonWriter json;
             json.beginObject().field("ok", true).key("system");
             writeSystemInfo(json, querySystemInfo());
-            json.field("launch_to_server_ready_ms", serverReadyMs)
+            json.field("launch_to_server_ready_ms", serverReadyMs.load())
                 .field("launch_to_ui_ready_ms", uiReadyMs.load())
                 .endObject();
             sendJson(res, json.str());
@@ -320,10 +324,13 @@ int ApiServer::start() {
     if (!s.sampleRoot.empty()) s.http.set_mount_point("/samples", s.sampleRoot);
     s.http.set_payload_max_length(kMaxInputBytes + 1024 * 1024);
     // Reject cross-site requests: only pages served by this server may call the API.
+    // Reject cross-site requests (Origin) and DNS-rebinding attempts (Host): only
+    // pages served by this server, addressed as 127.0.0.1:<port>, may call it.
     s.http.set_pre_routing_handler([&s](const httplib::Request& req, httplib::Response& res) {
+        const std::string self = "127.0.0.1:" + std::to_string(s.port);
         const std::string origin = req.get_header_value("Origin");
-        if (!origin.empty() && origin != "http://127.0.0.1:" + std::to_string(s.port)) {
-            sendError(res, 403, "Cross-origin request refused.");
+        if (req.get_header_value("Host") != self || (!origin.empty() && origin != "http://" + self)) {
+            sendError(res, 403, "Request refused: the workbench only accepts requests from its own page.");
             return httplib::Server::HandlerResponse::Handled;
         }
         return httplib::Server::HandlerResponse::Unhandled;
@@ -338,7 +345,7 @@ int ApiServer::start() {
     s.http.wait_until_ready();
     s.serverReadyMs = s.sinceLaunch();
     s.log("Server listening on http://127.0.0.1:" + std::to_string(s.port) + " (launch-to-server-ready " +
-          std::to_string(s.serverReadyMs) + " ms)");
+          std::to_string(s.serverReadyMs.load()) + " ms)");
     return s.port;
 }
 

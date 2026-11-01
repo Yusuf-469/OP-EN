@@ -33,7 +33,8 @@ async function run(id, action) {
     replaceCard(r.device);
     if (action === 'telemetry') {
       for (const a of r.attempts) log(`${id} attempt ${a.attempt}: ${a.message}`, a.timed_out ? 'err' : 'okl');
-      if (r.telemetry_ok) {
+      if (!r.telemetry_ok) log(`${id}: retries exhausted; device marked as error. Reconnect to recover.`, 'err');
+      else {
         log(`${id} telemetry #${r.frame.sequence}: ` + r.frame.fields.map(f => `${f.name}=${fmt(f.value, 4)} ${f.unit}`).join(', '), 'okl');
       }
     } else if (action.startsWith('inject')) {

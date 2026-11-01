@@ -68,8 +68,8 @@ Python 3.11 for the integration/E2E tests and figures (`pip install playwright==
 ```powershell
 cmake --preset release            # configure (build/)
 cmake --build --preset release    # Launch.exe, uew_cli.exe, uew_tests.exe
-ctest --preset release            # 28 CTest cases: unit, numerical, negative, sample-file
-python tests/api_smoke_test.py build/Launch.exe      # 30 HTTP integration checks
+ctest --preset release            # 31 CTest cases: unit, numerical, negative, job registry, sample files
+python tests/api_smoke_test.py build/Launch.exe      # 31 HTTP integration checks
 python tests/e2e_walkthrough.py build/Launch.exe     # UI end-to-end in Edge + screenshots
 powershell -File scripts/regenerate_results.ps1      # results/*.csv, *.json, plots
 powershell -File scripts/package_windows.ps1 -CandidateId <ID>   # dist/<ID>_Workbench.zip

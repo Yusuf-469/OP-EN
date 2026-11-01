@@ -33,7 +33,7 @@ produced by running the C++ code, not written by the AI.
 
 ## Independent verification
 
-* 28 CTest cases (unit, numerical, negative, sample files), 30 HTTP integration checks, an E2E browser test
+* 31 CTest cases (unit, numerical, negative, job registry, sample files), 31 HTTP integration checks, an E2E browser test
   (`tests/e2e_walkthrough.py`), file-size tests; all pass on the submitted build (`evidence/`).
 * Numerical results checked against closed-form theory, not against the AI's claims: midpoint error = qh²/8k
   exactly, order 2.000, energy balance 1.000 W = qAL, gradients vs central differences (~1e-10).
@@ -54,6 +54,7 @@ produced by running the C++ code, not written by the AI.
 | 9 | JS used `Math.max(...array)` for the hottest node (stack overflow above ~10^5 nodes) and then an `indexOf` on values serialised at different precision. | Self-review | Plain loop. |
 | 10 | E2E test requested 4000 x 20000 cases, above the backend's 50 M-node memory cap, so the job was (correctly) refused. | E2E failure | Test uses 2000 cases. |
 | 11 | JSON output used `snprintf` per number: 1M-node CSV took 7.0 s. | Upload size test | `std::to_chars`: 0.75 s. |
+| 12 | Robustness defects in AI-written C++: a failed thread spawn left a job "running" forever; non-`std::exception` throws could terminate; data race on the launch-time value; thread-spawn failure in the pool could terminate; serial row omitted from `agreement_ok`; `nan` printed as convergence order when q = 0; no Host check (DNS rebinding); `+-5` parsed as a number; documented memory bound off by 2x. | Separate AI review pass (Claude Code `cpp-reviewer` agent), each finding checked by hand before fixing | All fixed; new tests `jobs_busy_cancel_failure`, `convergence_order_roundoff`, `parsers_sign_and_range`, DNS-rebinding API check. |
 
 Issues found in the earlier ChatGPT prototype (reason for the rework): serial/parallel agreement compared only the
 last node of each case; benchmark numbers came from a Linux container, not the target Windows PC; most C++ was
