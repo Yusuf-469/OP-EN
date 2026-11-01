@@ -135,7 +135,7 @@ def excerpt(path, first, last):
     start = next(i for i, l in enumerate(lines) if l.startswith(first))
     stop = next(i for i, l in enumerate(lines) if i >= start and l.startswith(last))
     end = next(i for i, l in enumerate(lines) if i >= stop and l == "}")
-    return f'<h3><code>{path}</code>, lines {start + 1}&ndash;{end + 1}</h3><pre style="font-size:6.6pt;line-height:1.18;margin:2px 0">{esc(chr(10).join(lines[start:end + 1]))}</pre>'
+    return f'<h3><code>{path}</code>, lines {start + 1}&ndash;{end + 1}</h3><pre style="font-size:6.4pt;line-height:1.15;margin:1pt 0;padding:2pt 4pt">{esc(chr(10).join(lines[start:end + 1]))}</pre>'
 
 
 def appendix_code():
@@ -176,38 +176,43 @@ def cover(cfg, starts, perf):
               ("Backpropagation", "Report §7", ["src/core/backprop.cpp", "docs/backprop_worked_values.md"]),
               ("Prompt engineering / AI judgement", "Report §8", ["docs/ai_use_log.md", "docs/prompt_engineering.md"]),
               ("One-click delivery / report", "this PDF; Launch.exe in ZIP", [".vscode", "src/app/launcher_win.cpp"])]
-    mirror = f'<tr><th>Mirror download (Google Drive)</th><td>{link(cfg, "mirror_url", "")}</td></tr>' if cfg.get("mirror_url") else ""
-    video = link(cfg, "video_url", "video URL") if cfg.get("video_url") else "Timestamped screenshot walkthrough with logs: Appendix A (accepted equivalent)"
+    mirror = f'<div class="card"><div class="t">Mirror (Google Drive)</div>{link(cfg, "mirror_url", "")}</div>' if cfg.get("mirror_url") else ""
+    video = link(cfg, "video_url", "video URL") if cfg.get("video_url") else "Screenshot walkthrough, App. A"
     sha = f'<code>{esc(cfg["zip_sha256"])}</code>' if cfg.get("zip_sha256") else placeholder("SHA-256 from dist/*.zip.sha256")
-    return f"""<h1>Unified Engineering Workbench &mdash; Submission</h1>
-<p class="meta">PASS Science Works R&amp;D Internship 2026-27 &middot; common technical assignment &middot; Candidate <b>{cid}</b> &middot; commit {git("rev-parse", "--short", "HEAD")} &middot; {git("log", "-1", "--date=format:%Y-%m-%d", "--pretty=%ad")}</p>
-<div class="note"><b>Why the application is linked, not attached.</b> The submission form accepts one PDF of at most 1 MB. The runnable package
-(Launch.exe, source, tests, data, results, docs, git bundle) is <b>{cid}_Workbench.zip</b> at the link below; this PDF carries the report and the key
-evidence. The SHA-256 lets you confirm the downloaded ZIP is exactly the one submitted (PowerShell: <code>Get-FileHash {cid}_Workbench.zip</code>).</div>
-<table>
-<tr><th style="width:27%">Application package (ZIP)</th><td>{link(cfg, "zip_url", "ZIP download URL")}<br>SHA-256: {sha} {esc(cfg.get("zip_size", ""))}</td></tr>
-{mirror}
-<tr><th>Source repository</th><td>{link(cfg, "repo_url", "repository URL")}</td></tr>
-<tr><th>Demonstration</th><td>{video}</td></tr>
-</table>
-<h2>Run in one click</h2>
-<p>1. Download and extract the ZIP (right-click &rarr; Extract All). 2. Double-click <b>Launch.exe</b>: the workbench opens in the default browser
-(Windows 11 x64; no install, admin rights, terminal or internet). 3. Geometry &rarr; <i>Load sample heat sink</i>. In VS Code / Antigravity: open the folder
-&rarr; Terminal &rarr; Run Task &rarr; <i>Start packaged Workbench</i>.</p>
-<h2>Contents of this PDF</h2>
-<table>
+    return f"""<div class="hero"><p class="kicker">PASS Science Works &middot; R&amp;D Internship 2026&ndash;27 &middot; Common technical assignment</p>
+<h1>Unified Engineering Workbench</h1>
+<p class="sub">C++17 engineering workbench: CAD/ANSYS visualisation, thermal FEA, multicore batch solving, embedded mocks, backpropagation</p>
+<div class="facts"><div>Candidate<b>{cid}</b></div><div>Commit<b>{git("rev-parse", "--short", "HEAD")}</b></div>
+<div>Date<b>{git("log", "-1", "--date=format:%d %b %Y", "--pretty=%ad")}</b></div><div>Platform<b>Windows 11 x64</b></div><div>Demonstration<b>{video}</b></div></div></div>
+<div class="kpis">
+<div class="kpi"><div class="v">2.000</div><div class="l">FEA convergence order; midpoint error = qh&sup2;/8k exactly</div></div>
+<div class="kpi"><div class="v">{perf["SPEEDUP4"]}&times;</div><div class="l">speed-up on 4 workers (400 &times; 20,000-element rods)</div></div>
+<div class="kpi alt"><div class="v">0.0 &deg;C</div><div class="l">serial vs parallel difference ({perf["AGREEMENT"]})</div></div>
+<div class="kpi alt"><div class="v">110</div><div class="l">automated checks pass: unit, HTTP, browser E2E, file size, contrast</div></div>
+</div>
+<div class="links">
+<div class="card"><div class="t">Application package &mdash; download, extract, double-click Launch.exe</div>{link(cfg, "zip_url", "ZIP download URL")}
+<div class="small">SHA-256 {sha} &middot; {esc(cfg.get("zip_size", ""))}</div></div>
+<div class="card"><div class="t">Source repository</div>{link(cfg, "repo_url", "repository URL")}
+<div class="small">Every rubric line below links to the exact submitted commit.</div></div>{mirror}
+</div>
+<p class="small" style="margin:3pt 0 0"><b>Why linked, not attached:</b> the form accepts one PDF &le; 1 MB. The SHA-256 proves the downloaded ZIP is the submitted one
+(PowerShell: <code>Get-FileHash {cid}_Workbench.zip</code>).</p>
+<div class="two">
+<div><h2>Run in one click</h2><ol class="steps">
+<li>Download and extract the ZIP (right-click &rarr; Extract All).</li>
+<li>Double-click <b>Launch.exe</b>; the workbench opens in the browser. No install, admin rights, terminal or internet.</li>
+<li>Geometry &rarr; <i>Load sample heat sink</i>. VS Code: Run Task &rarr; <i>Start packaged Workbench</i>.</li></ol></div>
+<div><h2>Contents of this PDF</h2><table>
 <tr><th>Part</th><th class="n">Pages</th></tr>
-<tr><td>Technical report: design, FEA verification, performance, embedded design, backprop, tests, limitations, AI use</td><td class="n">{pages("report")}</td></tr>
-<tr><td>Appendix A &mdash; timestamped screenshot walkthrough with logs</td><td class="n">{pages("b")}</td></tr>
-<tr><td>Appendix B &mdash; commit history and test results</td><td class="n">{pages("c")}</td></tr>
-<tr><td>Appendix C &mdash; code excerpts: FE assembly and solver, parallel worker pool</td><td class="n">{pages("code")}</td></tr>
-</table>
-<h2>Headline results</h2>
-<p>FEA midpoint error 1.25 / 0.3125 / 0.0781 / 0.0195 &deg;C for N = 10 / 20 / 40 / 80, equal to qh&sup2;/8k (order 2.000); energy balance 1.000 W = qAL.
-400 &times; 20,000-element batch: speed-up {perf["SPEEDUP4"]}&times; on 4 workers, serial/parallel agreement {perf["AGREEMENT"]}.
-Gradients match central differences to ~10<sup>&minus;10</sup>. 110 automated checks pass (C++ unit/numerical/negative, HTTP integration, browser E2E, file size, WCAG contrast).</p>
+<tr><td>Technical report</td><td class="n">{pages("report")}</td></tr>
+<tr><td>A &mdash; Screenshot walkthrough with logs</td><td class="n">{pages("b")}</td></tr>
+<tr><td>B &mdash; Commit history and test results</td><td class="n">{pages("c")}</td></tr>
+<tr><td>C &mdash; Code excerpts (FE solver, worker pool)</td><td class="n">{pages("code")}</td></tr>
+</table></div></div>
 <h2>Rubric &rarr; evidence map</h2>
-<table><tr><th>Criterion</th><th>In this PDF</th><th>On GitHub (click)</th></tr>{"".join(f"<tr><td>{c}</td><td>{e}</td><td>{repo_links(cfg, p)}</td></tr>" for c, e, p in rubric)}</table>"""
+<table><tr><th style="width:27%">Criterion</th><th style="width:22%">In this PDF</th><th>On GitHub (click)</th></tr>{"".join(f"<tr><td><b>{c}</b></td><td>{e}</td><td>{repo_links(cfg, p)}</td></tr>" for c, e, p in rubric)}</table>
+<p class="small">FEA midpoint error 1.25 / 0.3125 / 0.0781 / 0.0195 &deg;C for N = 10 / 20 / 40 / 80; energy balance 1.000 W = qAL; gradients match central differences to ~10<sup>&minus;10</sup>.</p>"""
 
 
 def main():
