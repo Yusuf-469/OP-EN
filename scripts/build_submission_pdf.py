@@ -198,7 +198,8 @@ def main():
         tmp = Path(t)
         # Pass 1: page counts of the fixed parts (cover is always one page).
         report_pdf = render(report, tmp / "report.pdf")
-        (REPORT_DIR / "report.pdf").write_bytes((tmp / "report.pdf").read_bytes())
+        # Stand-alone report copy goes to dist/; docs/report/report.pdf is the committed version.
+        (out.parent / out.name.replace("_Submission", "_Report")).write_bytes((tmp / "report.pdf").read_bytes())
         count_c = len(render(appendix_c(), tmp / "c.pdf").pages)
         for quality in (50, 42, 35, 28):  # lower JPEG quality only as far as needed to fit the limit
             body_a, has_scans = appendix_a(quality)
