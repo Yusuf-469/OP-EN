@@ -14,6 +14,10 @@ function Invoke-Checked([string]$what, [scriptblock]$command) {
   if ($LASTEXITCODE -ne 0) { throw "$what failed (exit code $LASTEXITCODE)." }
 }
 
+# Fail early with the fix instead of a CMake generator error (without the preset, CMake on Windows picks NMake/MSVC).
+$missing = "cmake", "ninja", "g++", "git", "objdump" | Where-Object { -not (Get-Command $_ -ErrorAction SilentlyContinue) }
+if ($missing) { throw "Not on PATH: $($missing -join ', '). Install CMake, Ninja and MinGW-w64 GCC (README section 5); the build uses the 'release' preset, not MSVC." }
+
 if (git status --porcelain) { throw "Commit or stash changes first: the package is built from git HEAD." }
 
 Invoke-Checked "Configure" { cmake --preset release }

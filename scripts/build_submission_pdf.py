@@ -1,7 +1,7 @@
 """Builds the single submission PDF (< 1 MB) and the stand-alone report PDF.
 
 Parts: cover/index, report (<= 6 pages), Appendix A (screenshot walkthrough with log), Appendix B (commit log +
-test results). Report numbers are filled from results/*.json.
+test results), Appendix C (code excerpts). Report numbers are filled from results/*.json.
 Rendering uses the Edge that ships with Windows 11 (headless print-to-PDF); bookmarks are added with pypdf.
 All parts are printed as ONE document so each font is embedded once (separate prints repeated ~600 kB of fonts).
 
@@ -129,6 +129,24 @@ def appendix_c():
             f'<pre style="font-size:7.4pt;white-space:pre-wrap">{esc(tests)}</pre>')
 
 
+def excerpt(path, first, last):
+    """Source lines from the line starting with `first` to the closing brace of the function starting with `last`."""
+    lines = (ROOT / path).read_text(encoding="utf-8").splitlines()
+    start = next(i for i, l in enumerate(lines) if l.startswith(first))
+    stop = next(i for i, l in enumerate(lines) if i >= start and l.startswith(last))
+    end = next(i for i, l in enumerate(lines) if i >= stop and l == "}")
+    return f'<h3><code>{path}</code>, lines {start + 1}&ndash;{end + 1}</h3><pre style="font-size:6.6pt;line-height:1.18;margin:2px 0">{esc(chr(10).join(lines[start:end + 1]))}</pre>'
+
+
+def appendix_code():
+    return ("<h1>Appendix C &mdash; Code excerpts</h1>"
+            '<p class="meta">Printed straight from the submitted source (not retyped), so readability can be judged without '
+            "opening the repository. Full source: <code>src/</code> in the ZIP and on GitHub.</p>"
+            + excerpt("src/core/thermal_fea.cpp", "double elementConductance", "void solveTridiagonal")
+            + excerpt("src/core/batch.cpp", "void runParallel(const std::vector<RodProblem>& cases, int workers, BatchResult&",
+                      "void runParallel(const std::vector<RodProblem>& cases, int workers, BatchResult&"))
+
+
 def link(cfg, key, label):
     url = cfg.get(key)
     return f'<a href="{esc(url)}">{esc(url)}</a>' if url else placeholder(f"add {label} in docs/report/submission.json")
@@ -149,14 +167,14 @@ def cover(cfg, starts, perf):
     pages = lambda part: f"{starts[part][0]}&ndash;{starts[part][1]}" if starts[part][0] != starts[part][1] else str(starts[part][0])
     rubric = [("Interface / webpage design", "Report §1&ndash;2; App. A", ["src/web"]),
               ("C++ backend and testing", "Report §1&ndash;2, §8; App. B", ["src/core", "src/app", "tests"]),
-              ("Folder architecture", "README §3, §6", ["README.md"]), ("Code readability", "", ["src"]),
+              ("Folder architecture", "README §3, §6", ["README.md"]), ("Code readability", "App. C", ["src"]),
               ("Version control", "App. B", ["commits"]),
               ("Thermal FEA and adoption", "Report §4", ["docs/thermal_fea.md", "src/core/thermal_fea.cpp", "results/thermal"]),
               ("CAD / ANSYS visualisation", "Report §3; App. A", ["data", "src/core/geometry_io.cpp"]),
               ("Multicore performance", "Report §5", ["src/core/batch.cpp", "results/performance"]),
               ("Embedded integration", "Report §6", ["docs/embedded_design.md", "src/core/hardware.cpp"]),
               ("Backpropagation", "Report §7", ["src/core/backprop.cpp", "docs/backprop_worked_values.md"]),
-              ("Prompt engineering / AI judgement", "Report §8", ["docs/ai_use_log.md"]),
+              ("Prompt engineering / AI judgement", "Report §8", ["docs/ai_use_log.md", "docs/prompt_engineering.md"]),
               ("One-click delivery / report", "this PDF; Launch.exe in ZIP", [".vscode", "src/app/launcher_win.cpp"])]
     mirror = f'<tr><th>Mirror download (Google Drive)</th><td>{link(cfg, "mirror_url", "")}</td></tr>' if cfg.get("mirror_url") else ""
     video = link(cfg, "video_url", "video URL") if cfg.get("video_url") else "Timestamped screenshot walkthrough with logs: Appendix A (accepted equivalent)"
@@ -182,6 +200,7 @@ evidence. The SHA-256 lets you confirm the downloaded ZIP is exactly the one sub
 <tr><td>Technical report: design, FEA verification, performance, embedded design, backprop, tests, limitations, AI use</td><td class="n">{pages("report")}</td></tr>
 <tr><td>Appendix A &mdash; timestamped screenshot walkthrough with logs</td><td class="n">{pages("b")}</td></tr>
 <tr><td>Appendix B &mdash; commit history and test results</td><td class="n">{pages("c")}</td></tr>
+<tr><td>Appendix C &mdash; code excerpts: FE assembly and solver, parallel worker pool</td><td class="n">{pages("code")}</td></tr>
 </table>
 <h2>Headline results</h2>
 <p>FEA midpoint error 1.25 / 0.3125 / 0.0781 / 0.0195 &deg;C for N = 10 / 20 / 40 / 80, equal to qh&sup2;/8k (order 2.000); energy balance 1.000 W = qAL.
@@ -205,21 +224,23 @@ def main():
         # Stand-alone report copy goes to dist/; docs/report/report.pdf is the committed version.
         (out.parent / out.name.replace("_Submission", "_Report")).write_bytes((tmp / "report.pdf").read_bytes())
         count_c = len(render(appendix_c(), tmp / "c.pdf").pages)
+        count_code = len(render(appendix_code(), tmp / "code.pdf").pages)
         for quality in (50, 42, 35, 28):  # lower JPEG quality only as far as needed to fit the limit
             body_b = appendix_b(quality)
-            counts = {"report": len(report_pdf.pages), "b": len(render(body_b, tmp / "b.pdf").pages), "c": count_c}
+            counts = {"report": len(report_pdf.pages), "b": len(render(body_b, tmp / "b.pdf").pages), "c": count_c, "code": count_code}
             starts, page = {}, 2
-            for part in ("report", "b", "c"):
+            for part in ("report", "b", "c", "code"):
                 starts[part] = (page, page + counts[part] - 1)
                 page += counts[part]
             # Pass 2: one document, so fonts are embedded once.
-            sections = [cover(cfg, starts, perf), report, body_b, appendix_c()]
+            sections = [cover(cfg, starts, perf), report, body_b, appendix_c(), appendix_code()]
             combined = render('<div class="page"></div>'.join(f"<section>{s}</section>" for s in sections), tmp / "all.pdf")
             if len(combined.pages) != page - 1:
                 raise SystemExit(f"Page count mismatch ({len(combined.pages)} vs {page - 1}); a part overflowed differently.")
             writer = PdfWriter(clone_from=combined)
             for title, part in [("Submission index", None), ("Technical report", "report"),
-                                ("Appendix A - Screenshot walkthrough", "b"), ("Appendix B - Commits and tests", "c")]:
+                                ("Appendix A - Screenshot walkthrough", "b"), ("Appendix B - Commits and tests", "c"),
+                                ("Appendix C - Code excerpts", "code")]:
                 writer.add_outline_item(title, 0 if part is None else starts[part][0] - 1)
             writer.add_metadata({"/Title": "Unified Engineering Workbench - Submission", "/Author": cfg.get("candidate_id") or "CandidateID"})
             writer.compress_identical_objects(remove_duplicates=True, remove_unreferenced=True)
@@ -229,7 +250,7 @@ def main():
             if size < LIMIT_BYTES:
                 break
     print(f"{out.relative_to(ROOT)}: {size / 1e6:.3f} MB, {len(combined.pages)} pages "
-          f"(report {counts['report']}, A {counts['b']}, B {counts['c']}), JPEG quality {quality}")
+          f"(report {counts['report']}, A {counts['b']}, B {counts['c']}, C {counts['code']}), JPEG quality {quality}")
     if size >= LIMIT_BYTES:
         raise SystemExit("ERROR: still over 1 MB; reduce screenshots.")
     if counts["report"] > 6:

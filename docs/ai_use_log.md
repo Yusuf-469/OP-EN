@@ -21,6 +21,16 @@ reconstructed or invented. Sections marked **[candidate]** must be completed by 
    > (local path redacted: personal data)
 2. Mid-session refinement:
    > "USE THE SKILLS THAT CAN ENHANCE THIS PROJECT"
+3. Delivery review:
+   > "IN THE PDF WHY DONT WE PUT GITHUB LINKS OR ANY NECESSARY STUFF SO THAT THEY KNOW I HAVE COMPLETED EVERYTHING"
+4. Self-assessment:
+   > "out of 100 how much will u give this task be brutally honest mark it acc to company metric"
+5. External review forwarded for fixing (findings: readability evidence missing from the PDF; build fails with
+   NMake/MSVC when CMake runs without the preset).
+
+Earlier prototype: the full master prompt is kept unedited in `docs/prompts/master_prompt_v1.md`. A review of its
+weaknesses, the candidate's decisions, and refined staged prompts (clearly marked as written afterwards, not sent)
+are in `docs/prompt_engineering.md`.
 
 **[candidate]** Add any further prompts you used (e.g. questions asked to understand the FE weak form or the chain
 rule) with the date.
@@ -55,6 +65,9 @@ produced by running the C++ code, not written by the AI.
 | 10 | E2E test requested 4000 x 20000 cases, above the backend's 50 M-node memory cap, so the job was (correctly) refused. | E2E failure | Test uses 2000 cases. |
 | 11 | JSON output used `snprintf` per number: 1M-node CSV took 7.0 s. | Upload size test | `std::to_chars`: 0.75 s. |
 | 12 | Robustness defects in AI-written C++: a failed thread spawn left a job "running" forever; non-`std::exception` throws could terminate; data race on the launch-time value; thread-spawn failure in the pool could terminate; serial row omitted from `agreement_ok`; `nan` printed as convergence order when q = 0; no Host check (DNS rebinding); `+-5` parsed as a number; documented memory bound off by 2x. | Separate AI review pass (Claude Code `cpp-reviewer` agent), each finding checked by hand before fixing | All fixed; new tests `jobs_busy_cancel_failure`, `convergence_order_roundoff`, `parsers_sign_and_range`, DNS-rebinding API check. |
+
+| 13 | Submission PDF left the code-readability evidence cell empty, so a reviewer had to open the repository to judge the code. | External review obtained by the candidate | Appendix C prints excerpts straight from the source files (FE assembly/solver, worker pool). |
+| 14 | Packaging script assumed the toolchain; run without it, CMake fell back to NMake/MSVC and failed with an unhelpful error. | External review obtained by the candidate | Script checks cmake/ninja/g++/git/objdump first and names what is missing; README warns against configuring without the preset. |
 
 Issues found in the earlier ChatGPT prototype (reason for the rework): serial/parallel agreement compared only the
 last node of each case; benchmark numbers came from a Linux container, not the target Windows PC; most C++ was

@@ -116,7 +116,7 @@
 <tr><td>Raw data and plots</td><td><code>results/thermal|performance|backprop/*.csv|json</code>, <code>results/plots/*.svg|png</code> (plots drawn only from C++ output)</td></tr>
 <tr><td>Walkthrough with logs</td><td><code>evidence/walkthrough/*.png</code> + <code>walkthrough_log.txt</code> (Appendix A) {{VIDEO_NOTE}}</td></tr>
 <tr><td>Version control</td><td><code>evidence/git/repository.bundle</code> (<code>git clone repository.bundle</code>), <code>commit_log.txt</code> (Appendix B)</td></tr>
-<tr><td>AI use, ownership, effort</td><td><code>docs/ai_use_log.md</code> (12 groups of incorrect AI output found and fixed), <code>docs/ownership_statement.md</code>, <code>docs/effort_log.md</code></td></tr>
+<tr><td>AI use, ownership, effort</td><td><code>docs/ai_use_log.md</code> (14 groups of AI errors found and fixed), <code>docs/prompt_engineering.md</code>, <code>docs/ownership_statement.md</code>, <code>docs/effort_log.md</code></td></tr>
 </table>
 <h3>Known limitations</h3>
 <ul>
@@ -128,5 +128,5 @@
 <li>Upload cancellation stops the UI waiting; the C++ parse of that request completes and is discarded (safe, not pre-emptive).</li>
 </ul>
 <h3>AI use (summary)</h3>
-<p>I am the sole author of this submission. AI coding assistants were used as tools for code and documentation drafts, under my direction; the tools and models, prompts, outputs and my validation are disclosed in <code>docs/ai_use_log.md</code> as the brief requires, and an earlier AI-assisted prototype was used only as a reference. Verification was independent of the AI: closed-form theory, finite differences, 110 automated checks and repeated measurements. The most consequential AI errors were performance-related (per-solve allocation; unrecognised power throttling) and were caught only by measuring; others included a NaN-blind agreement check, an 8 KB upload limit, a wrong probe-voltage assumption and first-person drafts describing experiences I had not had. Full log with verbatim prompts: <code>docs/ai_use_log.md</code>.</p>
+<p>I am the sole author of this submission. AI coding assistants were used as tools for code and documentation drafts, under my direction; the tools and models, prompts, outputs and my validation are disclosed in <code>docs/ai_use_log.md</code> as the brief requires, and an earlier AI-assisted prototype was used only as a reference. Verification was independent of the AI: closed-form theory, finite differences, 110 automated checks and repeated measurements. The most consequential AI errors were performance-related (per-solve allocation; unrecognised power throttling) and were caught only by measuring; others included a NaN-blind agreement check and a wrong probe-voltage assumption. My decisions: <code>docs/prompt_engineering.md</code>.</p>
 </body></html>

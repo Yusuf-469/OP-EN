@@ -77,6 +77,9 @@ powershell -File scripts/package_windows.ps1 -CandidateId <ID>   # dist/<ID>_Wor
 powershell -File scripts/finalize.ps1 -CandidateId <ID>          # ZIP + SHA-256 + submission PDF (< 1 MB)
 ```
 
+Building is only needed to change the code: the ZIP already contains the built `Launch.exe`. Always configure with the
+`release` preset. A plain `cmake -B build` on Windows falls back to the NMake/Visual Studio generator and fails
+without MSVC; `package_windows.ps1` checks the prerequisites first and names whatever is missing.
 A `msvc` preset (Visual Studio 2022 Build Tools) is included but was not used for the submitted build.
 
 ## 6. Folder map
@@ -87,7 +90,7 @@ A `msvc` preset (Visual Studio 2022 Build Tools) is included but was not used fo
 | `tests/` | `test_core.cpp` (CTest), `api_smoke_test.py`, `e2e_walkthrough.py`, `upload_size_test.py`, `fixtures/bad_*` |
 | `data/` | Self-created sample STL and synthetic CSV + `PROVENANCE.md` |
 | `results/` | Raw CSV/JSON from the C++ CLI, plots, performance debugging record, file-size limits |
-| `docs/` | Report, thermal FEA notes, embedded design, AI-use log, ownership, dependencies, effort log |
+| `docs/` | Report, thermal FEA notes, embedded design, AI-use log, prompt review (`prompt_engineering.md`, `prompts/`), ownership, dependencies, effort log |
 | `evidence/` | Screenshot walkthrough + log, git bundle and commit log (in the package) |
 | `third_party/` | cpp-httplib v0.18.3 header and licences (three.js, Fira fonts vendored in `src/web/vendor`) |
 
