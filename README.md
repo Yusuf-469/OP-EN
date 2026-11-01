@@ -73,6 +73,7 @@ python tests/api_smoke_test.py build/Launch.exe      # 31 HTTP integration check
 python tests/e2e_walkthrough.py build/Launch.exe     # UI end-to-end in Edge + screenshots
 powershell -File scripts/regenerate_results.ps1      # results/*.csv, *.json, plots
 powershell -File scripts/package_windows.ps1 -CandidateId <ID>   # dist/<ID>_Workbench.zip
+powershell -File scripts/finalize.ps1 -CandidateId <ID>          # ZIP + SHA-256 + submission PDF (< 1 MB)
 ```
 
 A `msvc` preset (Visual Studio 2022 Build Tools) is included but was not used for the submitted build.
