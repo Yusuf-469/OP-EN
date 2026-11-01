@@ -182,7 +182,7 @@ evidence. The SHA-256 lets you confirm the downloaded ZIP is exactly the one sub
 <h2>Headline results</h2>
 <p>FEA midpoint error 1.25 / 0.3125 / 0.0781 / 0.0195 &deg;C for N = 10 / 20 / 40 / 80, equal to qh&sup2;/8k (order 2.000); energy balance 1.000 W = qAL.
 400 &times; 20,000-element batch: speed-up {perf["SPEEDUP4"]}&times; on 4 workers, serial/parallel agreement {perf["AGREEMENT"]}.
-Gradients match central differences to ~10<sup>&minus;10</sup>. 85 automated checks pass (C++ unit/numerical/negative, HTTP integration, browser E2E, file size).</p>
+Gradients match central differences to ~10<sup>&minus;10</sup>. 110 automated checks pass (C++ unit/numerical/negative, HTTP integration, browser E2E, file size, WCAG contrast).</p>
 <h2>Rubric &rarr; evidence map</h2>
 <table><tr><th>Criterion</th><th>Where to look</th></tr>{"".join(f"<tr><td>{c}</td><td>{e}</td></tr>" for c, e in rubric)}</table>"""
 
