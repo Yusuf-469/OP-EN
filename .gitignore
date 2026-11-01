@@ -8,3 +8,4 @@ logs/
 .vs/
 results/size_test/
 __pycache__/
+docs/report/submission.json

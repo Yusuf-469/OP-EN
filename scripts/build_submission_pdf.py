@@ -163,6 +163,7 @@ def cover(cfg, starts, perf):
 evidence. The SHA-256 lets you confirm the downloaded ZIP is exactly the one submitted (PowerShell: <code>Get-FileHash {cid}_Workbench.zip</code>).</div>
 <table>
 <tr><th style="width:27%">Application package (ZIP)</th><td>{link(cfg, "zip_url", "ZIP download URL")}<br>SHA-256: {sha} {esc(cfg.get("zip_size", ""))}</td></tr>
+<tr><th>Mirror download (Google Drive)</th><td>{link(cfg, "mirror_url", "Drive mirror URL")}</td></tr>
 <tr><th>Source repository</th><td>{link(cfg, "repo_url", "repository URL")}</td></tr>
 <tr><th>Demonstration</th><td>{video}</td></tr>
 </table>
@@ -188,7 +189,7 @@ Gradients match central differences to ~10<sup>&minus;10</sup>. 85 automated che
 
 def main():
     cfg_path = REPORT_DIR / "submission.json"
-    cfg = json.loads(cfg_path.read_text(encoding="utf-8")) if cfg_path.exists() else {}
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8-sig")) if cfg_path.exists() else {}  # -sig: tolerate a BOM (Notepad)
     out = ROOT / "dist" / f"{cfg.get('candidate_id') or 'CandidateID'}_Workbench_Submission.pdf"
     out.parent.mkdir(exist_ok=True)
     perf = perf_fields()
@@ -230,7 +231,7 @@ def main():
         raise SystemExit("ERROR: still over 1 MB; reduce screenshots or scan resolution.")
     if counts["report"] > 6:
         raise SystemExit(f"ERROR: report is {counts['report']} pages; the limit is 6.")
-    missing = [k for k in ("candidate_id", "zip_url", "repo_url", "zip_sha256") if not cfg.get(k)] + ([] if has_scans else ["handwritten scans"])
+    missing = [k for k in ("candidate_id", "zip_url", "mirror_url", "repo_url", "zip_sha256") if not cfg.get(k)] + ([] if has_scans else ["handwritten scans"])
     if missing:
         print("DRAFT - still missing:", ", ".join(missing))
 

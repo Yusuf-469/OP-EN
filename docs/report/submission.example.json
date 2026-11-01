@@ -1,0 +1,11 @@
+﻿{
+  "candidate_id": "RA2311026010469",
+  "zip_url": "https://github.com/<github-user>/UnifiedEngineeringWorkbench/releases/download/v1.0.0/RA2311026010469_Workbench.zip",
+  "mirror_url": "https://drive.google.com/file/d/<file-id>/view?usp=sharing",
+  "repo_url": "https://github.com/<github-user>/UnifiedEngineeringWorkbench",
+  "zip_sha256": "<from dist/RA2311026010469_Workbench.zip.sha256>",
+  "zip_size": "<e.g. 6.1 MB>",
+  "video_url": "",
+  "learning_note": "",
+  "clean_machine_note": ""
+}
