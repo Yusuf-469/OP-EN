@@ -13,7 +13,7 @@
 <p><b>Why a browser UI.</b> three.js gives robust 3D interaction (rotate, pan, zoom, picking) with little code, and Edge ships with Windows 11. Libraries and fonts are vendored, so nothing is fetched at runtime.</p>
 </div>
 <div>
-<p><b>One-click delivery.</b> Static linking (MinGW-w64 GCC 16.2, <code>-static</code>) means <code>Launch.exe</code> imports only Windows system DLLs &mdash; no VC++ redistributable, installer, admin rights or first-run build. Logs: <code>logs/workbench.log</code>. Measured launch-to-server-ready <b>61 ms</b>; launch-to-UI-ready <b>1.45 s</b> including browser start (E2E log).</p>
+<p><b>One-click delivery.</b> Static linking (MinGW-w64 GCC 16.2, <code>-static</code>) means <code>Launch.exe</code> imports only Windows system DLLs &mdash; no VC++ redistributable, installer, admin rights or first-run build. Logs: <code>logs/workbench.log</code>. Measured launch-to-server-ready <b>28&ndash;61 ms</b> and launch-to-UI-ready <b>1.35&ndash;1.45 s</b> including browser start, over several runs (log in Appendix B).</p>
 <p><b>Responsiveness and safe completion.</b> The benchmark runs as a job on its own thread; the UI polls progress (completed solves / total, stage) every 250 ms and can <b>cancel</b>. Workers check an atomic flag between solves; a cancelled or failed job publishes nothing, so the previous result stays intact. Only one compute job runs at a time (HTTP 409 otherwise) so timings are not disturbed.</p>
 <p><b>Errors.</b> Exceptions map to HTTP 400 (bad input, with parameter or file line), 409 (state), 500; the UI shows the message next to the field and in an <code>aria-live</code> status bar.</p>
 </div>
