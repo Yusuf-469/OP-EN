@@ -43,6 +43,9 @@ public:
         return *this;
     }
 
+    // Inserts already-serialised JSON produced by another JsonWriter.
+    JsonWriter& raw(std::string_view json) { separate(); out_ += json; return *this; }
+
     template <typename T>
     JsonWriter& field(std::string_view name, const T& v) { key(name); return value(v); }
 

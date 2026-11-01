@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unified Engineering Workbench</title>
+  <link rel="stylesheet" href="app.css">
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg aria-hidden="true" viewBox="0 0 24 24" class="icon"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg>
+    <h1>Unified Engineering Workbench</h1>
+  </div>
+  <div id="server-status" class="pill pill-wait" role="status">Connecting to C++ backend…</div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Workbench views">
+  <button role="tab" id="tab-geometry" aria-controls="view-geometry" aria-selected="true">Geometry</button>
+  <button role="tab" id="tab-thermal" aria-controls="view-thermal" aria-selected="false" tabindex="-1">Thermal Analysis</button>
+  <button role="tab" id="tab-performance" aria-controls="view-performance" aria-selected="false" tabindex="-1">Performance</button>
+  <button role="tab" id="tab-hardware" aria-controls="view-hardware" aria-selected="false" tabindex="-1">Hardware</button>
+  <button role="tab" id="tab-backprop" aria-controls="view-backprop" aria-selected="false" tabindex="-1">Backprop check</button>
+</nav>
+
+<main>
+  <!-- ============================================================ GEOMETRY -->
+  <section id="view-geometry" role="tabpanel" aria-labelledby="tab-geometry" class="view layout-side">
+    <aside class="panel side">
+      <h2>1. ASCII STL geometry</h2>
+      <label class="file-btn">Open STL file…<input type="file" id="stl-file" accept=".stl"></label>
+      <button class="link-btn" id="stl-sample">Load sample heat sink (self-created)</button>
+      <label for="stl-units">STL file units</label>
+      <select id="stl-units">
+        <option value="0.001" selected>millimetres (mm)</option>
+        <option value="1">metres (m)</option>
+        <option value="0.0254">inches (in)</option>
+      </select>
+      <dl id="stl-info" class="facts"></dl>
+
+      <h2>2. Nodal temperature CSV</h2>
+      <p class="hint">Columns: <code>node_id,x_m,y_m,z_m,temperature_C</code></p>
+      <label class="file-btn">Open CSV file…<input type="file" id="csv-file" accept=".csv,.txt"></label>
+      <button class="link-btn" id="csv-sample">Load sample temperatures (synthetic)</button>
+      <dl id="csv-info" class="facts"></dl>
+
+      <h2>Display</h2>
+      <label class="check"><input type="checkbox" id="show-mesh" checked> Show geometry</label>
+      <label class="check"><input type="checkbox" id="show-wire"> Wireframe</label>
+      <label class="check"><input type="checkbox" id="show-points" checked> Show temperature nodes</label>
+      <label for="point-size">Node size <output id="point-size-out">6</output> px</label>
+      <input type="range" id="point-size" min="2" max="16" value="6">
+      <div class="row">
+        <button class="btn" id="fit-view">Fit to view</button>
+        <button class="btn btn-ghost" id="cancel-upload" hidden>Cancel loading</button>
+      </div>
+    </aside>
+    <div class="panel viewer-wrap">
+      <div id="viewer" class="viewer" tabindex="0" aria-label="3D viewer. Drag to rotate, right-drag to pan, scroll to zoom. Click a node to inspect it."></div>
+      <div id="viewer-empty" class="viewer-empty">Open an STL or CSV file, or load a sample, to begin.</div>
+      <p class="viewer-help">Drag: rotate · Right-drag: pan · Wheel: zoom · Arrow keys: pan · Click node: inspect · Scene units: m</p>
+      <div class="cam-controls" role="group" aria-label="Camera controls">
+        <button type="button" data-cam="left" aria-label="Rotate left">⟲</button>
+        <button type="button" data-cam="right" aria-label="Rotate right">⟳</button>
+        <button type="button" data-cam="in" aria-label="Zoom in">+</button>
+        <button type="button" data-cam="out" aria-label="Zoom out">−</button>
+        <button type="button" data-cam="fit" aria-label="Reset camera to fit all">Fit</button>
+      </div>
+      <div id="legend" class="legend" hidden>
+        <div class="legend-title">Temperature (°C)</div>
+        <canvas id="legend-bar" width="24" height="200" aria-hidden="true"></canvas>
+        <div class="legend-ticks" id="legend-ticks"></div>
+      </div>
+      <div id="inspect" class="inspect" hidden aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================= THERMAL -->
+  <section id="view-thermal" role="tabpanel" aria-labelledby="tab-thermal" class="view layout-side" hidden>
+    <aside class="panel side">
+      <h2>1D steady rod, linear elements</h2>
+      <p class="hint">Solves −d/dx(kA dT/dx) = qA with T(0), T(L) prescribed; lateral surface insulated.</p>
+      <form id="thermal-form" novalidate>
+        <div class="field"><label for="p-L">Length L <span class="unit">m</span></label><input id="p-L" name="L" type="number" step="any" value="1" required></div>
+        <div class="field"><label for="p-A">Area A <span class="unit">m²</span></label><input id="p-A" name="A" type="number" step="any" value="1e-4" required></div>
+        <div class="field"><label for="p-k">Conductivity k <span class="unit">W/(m·K)</span></label><input id="p-k" name="k" type="number" step="any" value="10" required></div>
+        <div class="field"><label for="p-q">Heat generation q <span class="unit">W/m³</span></label><input id="p-q" name="q" type="number" step="any" value="10000" required></div>
+        <div class="field"><label for="p-T0">T(0) <span class="unit">°C</span></label><input id="p-T0" name="T0" type="number" step="any" value="100" required></div>
+        <div class="field"><label for="p-TL">T(L) <span class="unit">°C</span></label><input id="p-TL" name="TL" type="number" step="any" value="20" required></div>
+        <div class="field"><label for="p-N">Meshes N <span class="unit">elements, comma-separated</span></label><input id="p-N" name="N" type="text" value="10,20,40,80" required></div>
+        <p id="thermal-error" class="form-error" role="alert"></p>
+        <div class="row">
+          <button class="btn" type="submit">Solve &amp; compare</button>
+          <button class="btn btn-ghost" type="button" id="thermal-reset">Task C defaults</button>
+        </div>
+      </form>
+      <h2>Export CSV</h2>
+      <div class="row wrap">
+        <a class="btn btn-ghost" id="exp-nodes" download>Nodal T</a>
+        <a class="btn btn-ghost" id="exp-mid" download>Midpoint errors</a>
+        <a class="btn btn-ghost" id="exp-conv" download>Convergence</a>
+      </div>
+      <details class="explain">
+        <summary>How the solver works</summary>
+        <p>Each element of length h contributes <b>k<sub>e</sub> = (kA/h)[1 −1; −1 1]</b> and <b>f<sub>e</sub> = (qAh/2)[1; 1]</b>, assembled into a tridiagonal system. Prescribed temperatures are imposed by moving the known column to the right-hand side and replacing the row with the identity (keeps symmetry), then the Thomas algorithm solves in O(N).</p>
+        <p>Error is measured at <b>element midpoints</b> using FE interpolation, because linear elements on this problem are exact at the nodes. Theory: midpoint error = qh²/(8k), so halving h divides it by 4 (order 2).</p>
+      </details>
+    </aside>
+    <div class="stack">
+      <div class="panel"><h2>Temperature along the rod</h2><div id="chart-T" class="chart"></div></div>
+      <div class="grid-2">
+        <div class="panel"><h2>Mesh convergence (log–log)</h2><div id="chart-conv" class="chart"></div></div>
+        <div class="panel"><h2>Verification table</h2><div id="thermal-table" class="table-wrap"></div><p id="energy" class="hint"></p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= PERFORMANCE -->
+  <section id="view-performance" role="tabpanel" aria-labelledby="tab-performance" class="view layout-side" hidden>
+    <aside class="panel side">
+      <h2>Batch of independent solves</h2>
+      <p class="hint">Same cases and solver for serial and worker-pool runs. 1 warm-up, then 5 timed repetitions each; only the solve loop is timed.</p>
+      <form id="bench-form" novalidate>
+        <div class="field"><label for="b-cases">Cases</label><input id="b-cases" name="cases" type="number" min="1" max="100000" value="400"></div>
+        <div class="field"><label for="b-mesh">Elements per case</label><input id="b-mesh" name="mesh" type="number" min="1" max="1000000" value="20000"></div>
+        <div class="field"><label for="b-seed">Seed</label><input id="b-seed" name="seed" type="number" min="0" value="20261101"></div>
+        <div class="field"><label for="b-workers">Max workers (≤ 4, ≤ logical CPUs)</label><input id="b-workers" name="workers" type="number" min="1" max="4" value="4"></div>
+        <p id="bench-error" class="form-error" role="alert"></p>
+        <div class="row">
+          <button class="btn" type="submit" id="bench-start">Run benchmark</button>
+          <button class="btn btn-danger" type="button" id="bench-cancel" disabled>Cancel</button>
+        </div>
+      </form>
+      <div class="progress-wrap">
+        <progress id="bench-progress" max="1" value="0" aria-label="Benchmark progress"></progress>
+        <p id="bench-stage" class="hint" aria-live="polite">Idle</p>
+      </div>
+      <h2>This machine</h2>
+      <dl id="sys-info" class="facts"></dl>
+    </aside>
+    <div class="stack">
+      <div class="panel"><h2>Timings</h2><div id="bench-table" class="table-wrap"><p class="hint">Run the benchmark to see results.</p></div>
+        <div class="row wrap" id="bench-downloads"></div></div>
+      <div class="panel"><h2>Speed-up vs workers</h2><div id="chart-speedup" class="chart"></div></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ HARDWARE -->
+  <section id="view-hardware" role="tabpanel" aria-labelledby="tab-hardware" class="view" hidden>
+    <div class="banner" role="note"><b>SIMULATED</b> — these are C++ mock adapters. No USB, serial or JTAG hardware is accessed.</div>
+    <div class="grid-hw">
+      <div class="panel">
+        <h2>Integration block diagram</h2>
+        <object id="block-diagram" data="block_diagram.svg" type="image/svg+xml" aria-label="Block diagram: host PC, powered USB hub, microcontroller board, FPGA board and JTAG debug adapter with signal and voltage annotations"></object>
+      </div>
+      <div class="panel">
+        <div class="row between"><h2>Devices</h2><button class="btn" id="hw-discover">Discover devices</button></div>
+        <div id="hw-devices" class="devices"></div>
+      </div>
+    </div>
+    <div class="panel"><h2>Event log</h2><ol id="hw-log" class="log" aria-live="polite"></ol></div>
+  </section>
+
+  <!-- ============================================================ BACKPROP -->
+  <section id="view-backprop" role="tabpanel" aria-labelledby="tab-backprop" class="view" hidden>
+    <div class="grid-2">
+      <div class="panel"><h2>Forward pass, gradients and update</h2>
+        <p class="hint">x = 1, y = 2, h = tanh(wx + b), ŷ = vh + c, J = ½(ŷ − y)², learning rate 0.1. Gradients are hand-derived (no autodiff) and checked by central differences, ε = 1e-6.</p>
+        <div id="bp-table" class="table-wrap"></div></div>
+      <div class="panel"><h2>Loss over 100 gradient steps</h2><div id="chart-loss" class="chart"></div></div>
+    </div>
+  </section>
+</main>
+
+<footer class="statusbar">
+  <span id="status" role="status" aria-live="polite">Ready.</span>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
