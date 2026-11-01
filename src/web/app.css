@@ -1,4 +1,4 @@
-﻿/* Fira Sans (UI) + Fira Code (numbers/logs), bundled locally under the SIL OFL so the app works offline. */
+/* Fira Sans (UI) + Fira Code (numbers/logs), bundled locally under the SIL OFL so the app works offline. */
 @font-face { font-family: "Fira Sans"; font-weight: 400; font-display: swap; src: url(vendor/fonts/fira-sans-latin-400-normal.woff2) format("woff2"); }
 @font-face { font-family: "Fira Sans"; font-weight: 600; font-display: swap; src: url(vendor/fonts/fira-sans-latin-600-normal.woff2) format("woff2"); }
 @font-face { font-family: "Fira Code"; font-weight: 400; font-display: swap; src: url(vendor/fonts/fira-code-latin-400-normal.woff2) format("woff2"); }
@@ -15,7 +15,8 @@
   --ok: #17703a;
   --warn: #8a5300;
   --bad: #b3261e;
-  --focus: #f0a400;
+  --field-border: #7a8896;  /* 3.6:1 on white (WCAG 1.4.11) */
+  --focus: #b45309;  /* 5.0:1 on white; 2px offset keeps the ring on the panel background */
   --radius: 8px;
   font-family: "Fira Sans", "Segoe UI", system-ui, sans-serif;
   font-size: 16px;
@@ -58,7 +59,7 @@ main { flex: 1; padding: 1rem 1.25rem; }
 
 label { font-size: .9rem; font-weight: 500; }
 .unit { color: var(--muted); font-weight: 400; }
-input[type=number], input[type=text], select { width: 100%; min-height: 40px; padding: .4rem .6rem; border: 1px solid #9aa8b6; border-radius: 6px; font: inherit; background: #fff; color: var(--ink); }
+input[type=number], input[type=text], select { width: 100%; min-height: 40px; padding: .4rem .6rem; border: 1px solid var(--field-border); border-radius: 6px; font: inherit; background: #fff; color: var(--ink); }
 input[aria-invalid=true] { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
 .field { display: grid; gap: .2rem; margin-bottom: .45rem; }
 .form-error { color: var(--bad); font-size: .875rem; min-height: 1.2em; margin: .2rem 0; }

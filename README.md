@@ -71,6 +71,7 @@ cmake --build --preset release    # Launch.exe, uew_cli.exe, uew_tests.exe
 ctest --preset release            # 31 CTest cases: unit, numerical, negative, job registry, sample files
 python tests/api_smoke_test.py build/Launch.exe      # 31 HTTP integration checks
 python tests/e2e_walkthrough.py build/Launch.exe     # UI end-to-end in Edge + screenshots
+python tests/contrast_check.py                        # WCAG 2.2 contrast audit of UI colours (25 pairs)
 powershell -File scripts/regenerate_results.ps1      # results/*.csv, *.json, plots
 powershell -File scripts/package_windows.ps1 -CandidateId <ID>   # dist/<ID>_Workbench.zip
 powershell -File scripts/finalize.ps1 -CandidateId <ID>          # ZIP + SHA-256 + submission PDF (< 1 MB)
