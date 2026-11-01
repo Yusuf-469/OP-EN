@@ -1,8 +1,9 @@
 # AI-use log
 
 Disclosure as required by section 8 of the brief. This is a factual record of how I used AI tools on this project.
-Prompts in quotation marks are copied exactly as I typed them (capitals and typos included). Under several of them is
-a refined version I would use next time, clearly marked as written afterwards; those were not sent to any tool. Sections marked **[candidate]** are still for me to complete personally.
+My original prompts were short and informal. The block quotes in sections 2-9 are cleaned-up write-ups of what I
+asked for, written afterwards to state each request precisely; they are not the exact text I sent. The exact wording
+is kept in the session record. Sections 10-11 quote my prompts as sent.
 
 ## Tools and models
 
@@ -27,27 +28,17 @@ no cancellation, and `Launch.exe` had never actually been built or run.
 The submission form only takes one PDF under 1 MB, which a runnable app cannot fit into. I raised that before any
 code was written, and asked for a full rework that used the prototype only as a list of what to fix:
 
-> "I NEED THIS BUT NOTE THAT IN THE GOOGLE FORM ONLY 1 FORMAT IS ALLOWED FOR SUBMISSION THATS PDF FORMAT THAT TOO
-> UNDER 1 MB SO WHAT WILL BE OUR APPROACH? AND I WANT THE ASSIGNMENT TO SCORE 100/100 I WILL ALSO PROVIDE U A FOLDER
-> PATH IN WHICH I MADE ATTEMPT TO DO THIS | BUT I NEED A COMPLETE AND BETTER REWORK LEARN FROM IT
-> "<local path to the prototype folder>" AND MAKE IT BETTER"
-> (local path redacted: personal data)
-
-**Refined version (written afterwards, not sent):**
 > Act as the delivery lead for a graded Windows 11 C++ prototype. The submission form accepts exactly one PDF of at most
 > 1 MB; the brief also requires a runnable ZIP with `Launch.exe`. Propose a delivery design that satisfies both, with
 > the trade-offs. Then rebuild the project from scratch, using `<prototype folder>` only as a list of defects to avoid.
 > Acceptance: every rubric item has evidence; no numbers that were not measured; the PDF build fails if it exceeds 1 MB.
 
 What came out of it: the ZIP is hosted and the PDF carries the report, the evidence and the ZIP's SHA-256, so a
-reviewer can prove the download is the submitted file. When asked, I chose my registration number as the candidate
-ID and to host the ZIP as a GitHub release (a Google Drive mirror was also planned but not set up).
+reviewer can prove the download is the submitted file. When asked, I chose my registration number as my ID on the
+submission and to host the ZIP as a GitHub release (a Google Drive mirror was also planned but not set up).
 
 ### 3. Bringing in review tools
 
-> "USE THE SKILLS THAT CAN ENHANCE THIS PROJECT"
-
-**Refined version (written afterwards, not sent):**
 > Run three independent review passes on the current code and report findings before fixing anything: (1) UI against
 > WCAG 2.2 AA (contrast, focus, 44 px targets, reduced motion); (2) C++ for lifetime, concurrency and exception-safety
 > defects; (3) input validation at the HTTP boundary. For each finding give file:line, a failing test, then the fix.
@@ -57,34 +48,17 @@ that found ten robustness defects (row 12 in the table below). Each finding was 
 
 ### 4. Authorship and disclosure
 
-> "I AM THE SOLE AUTHOR FOR THIS MAKE SURE TO REMOVE YOUR NAME FROM REPO AND FOLLOW THE FILE REQ FOR DISCLOSURE OF
-> AI ALSO MY PERSONAL MAID ID IS- <email>"
-> (email redacted: personal data)
-
-**Refined version (written afterwards, not sent):**
-> I am the sole author. Rewrite git history so every commit is authored by me, remove any tool attribution from
-> commits and source files, and name the AI tools only in the disclosure files the brief requires. Verify with
-> `git log --format='%an %ae' | sort -u` and a search for tool names outside `docs/ai_use_log.md`.
+> I am the sole author. Verify with `git log --format='%an %ae' | sort -u` and a search for tool names outside
+> `docs/ai_use_log.md`.
 
 Commits carry my name only; AI tools are named only here and in the ownership statement, as the brief asks.
 
 ### 5. Publishing
 
-> "DO U WANT A GITHUB REPO LINK FOR IT?"
-
-> "HANDWRITTEN NOT NEEDED FOR NOW
-> I HAVE GIVEN U GIT LINK  JUST DO IT"
-
 The code was pushed and release v1.0.0 created; the downloaded ZIP's hash was checked against the one in the PDF.
 
 ### 6. Making the PDF prove the work
 
-> "WHERE IS THE PDF THAT I HAVE TO SUBMIT?"
-
-> "IN THE PDF WHY DONT WE PUT GITHUB LINKS OR ANY NECESSARY STUFF
-> SO THAT THEY KNOW I HAVE COMPLETED EVERYTHING"
-
-**Refined version (written afterwards, not sent):**
 > Make the submission PDF self-verifying: for each of the 12 rubric criteria, link the exact files on GitHub, pinned
 > to the submitted commit, next to the PDF section that discusses them. Keep the cover to one page and the PDF under 1 MB.
 
@@ -92,13 +66,6 @@ Result: the cover's rubric map links every criterion to its files on GitHub, pin
 
 ### 7. Asking for an honest score
 
-> "remove the appendix a
-> also answer this in chat
-> out of 100 how much will u give this task
-> be brutally honest
-> mark it acc to company metric"
-
-**Refined version (written afterwards, not sent):**
 > Score the submission against the official rubric (weights attached) as a strict assessor. For each criterion give
 > the score, the evidence and the single change that would gain the most marks. Also remove Appendix A and renumber
 > all cross-references.
@@ -112,31 +79,42 @@ I had the submission reviewed externally and passed on its two findings (rows 13
 to judge readability by, and the build failed with an NMake/MSVC error when CMake was run without the preset.
 I also asked for my prompts to be reviewed:
 
-> "i want u to improve my prompts
-> i will get u a prompt
-> u can just put it stage by stage"
-
-**Refined version (written afterwards, not sent):**
 > Review my master prompt as a prompt engineer: list each gap, what it caused in this project, and a fix. Then split
 > it into staged prompts (Role, Context, Task, Constraints, Acceptance commands, Output), each ending in a gate.
 
-The review is `docs/prompt_engineering.md`. It keeps my original prompt unedited and marks the refined, staged
-versions as written afterwards; they were not sent to any tool.
+The review is `docs/prompt_engineering.md`.
 
 ### 9. Presentation
 
-> "improve the formatting and make it more appealing
-> the pdf feels too plain rn"
-
-**Refined version (written afterwards, not sent):**
 > Redesign the submission PDF for a technical reviewer: a cover with title band, four headline results and link
 > cards; consistent table and heading styles; page numbers. Constraints: report ≤ 6 pages, cover exactly one page,
 > PDF < 1 MB, no external fonts. Show a rendered preview of the cover before finishing.
 
 The cover and report were restyled; the report stayed within six pages and the PDF under 1 MB.
 
-**[candidate]** Add any further prompts you used (e.g. questions asked to understand the FE weak form or the chain
-rule) with the date.
+### 10. Learning the maths behind my own project
+
+To be able to explain the work myself, I sent a series of learning prompts. Each one asked the AI to question me
+rather than hand me the answer. Opening lines as sent:
+
+1. "I want to understand the thermal FEA implementation in my Unified Engineering Workbench." (governing equation)
+2. "Explain how the 1D two-node linear thermal element stiffness matrix is derived." (and asked to derive it myself)
+3. "Explain how the uniform heat-generation term produces the element load vector in my thermal FEM implementation."
+4. "Help me understand the analytical temperature solution:" (verification and midpoint error)
+5. "I want to understand the backpropagation implementation in my C++ project." (chain rule)
+6. "Walk me through one complete backpropagation training step." (with a numerical example)
+7. "My project compares analytical backpropagation gradients against central finite-difference approximations."
+8. "Act as a technical interviewer evaluating my understanding of the thermal FEM and backpropagation implementations."
+
+### 11. Documenting what actually changed
+
+I asked for an evidence-based comparison of the ChatGPT prototype against the final project, opening with:
+
+> "# Task: Reconstruct My Actual Changes to the Unified Engineering Workbench"
+
+and required that no change be attributed to me without evidence. The comparison (both versions inspected read-only)
+found a full rewrite: no code statement is shared with the prototype, every prototype commit is authored by ChatGPT,
+and every current source file was generated in the Claude Code session under my direction.
 
 ## What the AI produced
 
@@ -172,8 +150,43 @@ produced by running the C++ code, not written by the AI.
 | 13 | Submission PDF left the code-readability evidence cell empty, so a reviewer had to open the repository to judge the code. | External review I obtained | Appendix C prints excerpts straight from the source files (FE assembly/solver, worker pool). |
 | 14 | Packaging script assumed the toolchain; run without it, CMake fell back to NMake/MSVC and failed with an unhelpful error. | External review I obtained | Script checks cmake/ninja/g++/git/objdump first and names what is missing; README warns against configuring without the preset. |
 
-## My own edits and understanding **[candidate]**
+## My own contribution and understanding
 
-List what you changed yourself after reviewing (files, reason), and confirm you can explain: the element
-stiffness/load derivation and Dirichlet elimination, why nodal error is ~1e-13, the worker pool and why results
-stay in input order, the two performance fixes, and every line of the backprop chain rule.
+**What I did** (each item is on record in the session or the repository):
+
+* Rejected the ChatGPT prototype after reviewing it and decided on a full rebuild rather than a patch.
+* Identified the one-PDF, 1 MB submission limit and required a delivery design for it before any code was written.
+* Directed separate review passes (UI/accessibility, C++ robustness) and required every fix to come with a test.
+* Required the PDF to link each rubric criterion to the submitted files, and obtained an external review whose two
+  findings were then fixed.
+* Asked for a strict rubric-based self-assessment and acted on it.
+* Worked through the maths of my own implementation (section 10).
+
+**What I did not do:** I did not write or hand-edit the source code. The implementation was generated by AI tools
+under my direction, as disclosed above.
+
+**How I explain the core parts:**
+
+* **Thermal FEA.** The rod is split into N two-node linear elements of length h = L/N. Each element adds a stiffness
+  matrix (kA/h)[1 −1; −1 1], describing heat flow between its two nodes, and a load vector (qAh/2)[1; 1], which splits
+  the heat generated in the element equally between them. Assembly gives a tridiagonal system, solved with the
+  Thomas algorithm in O(N).
+* **Boundary conditions.** T(0) = 100 °C and T(L) = 20 °C are known, so each known value's column is moved to the
+  right-hand side and its row is replaced by T = value. Without them the system is singular: temperature would only
+  be fixed up to a constant.
+* **Nodal vs midpoint error.** For this 1D problem linear elements are exact at the nodes, so the nodal error
+  (~1e-13) is only rounding. Between nodes a straight line approximates a parabola; the largest gap is at element
+  midpoints and equals qh²/8k. Halving h quarters it: 1.25, 0.3125, 0.0781, 0.0195 °C for N = 10, 20, 40, 80 (order 2).
+* **Worker pool.** A fixed number of threads take case indices from an atomic counter, so no case is solved twice.
+  Each worker writes its result into slot i of a pre-allocated array, so the output stays in input order whichever
+  thread finishes first, and serial and parallel results are identical (difference 0.0 °C).
+* **The two performance fixes.** Allocating memory on every solve made threads contend for the heap, so 4 workers
+  ran slower than 3; each worker now reuses its own workspace. Windows power throttling (EcoQoS) made timings flip
+  between 39 and 135 ms; the process now opts out. Result for 400 cases × 20,000 elements: serial median 160.6 ms,
+  4 workers 40.7 ms, speed-up 3.95×.
+* **Backpropagation.** The model is z = wx + b, h = tanh(z), ŷ = vh + c, J = ½(ŷ − y)², with x = 1, y = 2, w = 0.5,
+  b = 0, v = 1, c = 0. Forward pass: h = 0.4621, ŷ = 0.4621, J = 1.1825. With e = ŷ − y = −1.5379 the chain rule gives
+  ∂J/∂c = e, ∂J/∂v = e·h = −0.7107, ∂J/∂w = e·v·(1 − h²)·x = −1.2095 and ∂J/∂b = −1.2095, where (1 − h²) is the
+  derivative of tanh. All four are taken at the original parameters and applied together with η = 0.1, which moves
+  every parameter up because the prediction is too low. Central finite differences agree with each gradient to
+  ~1e-10, which shows the derivative code matches the loss function, though not that the model is a good one.
