@@ -94,6 +94,9 @@ A `msvc` preset (Visual Studio 2022 Build Tools) is included but was not used fo
 | `evidence/` | Screenshot walkthrough + log, git bundle and commit log (in the package) |
 | `third_party/` | cpp-httplib v0.18.3 header and licences (three.js, Fira fonts vendored in `src/web/vendor`) |
 
+Version history: the commit history was rewritten once on 2026-11-01 to use a single author identity and shorter
+technical messages; commit contents, order and timestamps are unchanged.
+
 ## 7. Known limitations
 
 * Windows 11 x64 only for the packaged app (the core and tests are portable C++17 but only Windows was built and tested).
