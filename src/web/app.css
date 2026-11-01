@@ -1,4 +1,4 @@
-/* Fira Sans (UI) + Fira Code (numbers/logs), bundled locally under the SIL OFL so the app works offline. */
+﻿/* Fira Sans (UI) + Fira Code (numbers/logs), bundled locally under the SIL OFL so the app works offline. */
 @font-face { font-family: "Fira Sans"; font-weight: 400; font-display: swap; src: url(vendor/fonts/fira-sans-latin-400-normal.woff2) format("woff2"); }
 @font-face { font-family: "Fira Sans"; font-weight: 600; font-display: swap; src: url(vendor/fonts/fira-sans-latin-600-normal.woff2) format("woff2"); }
 @font-face { font-family: "Fira Code"; font-weight: 400; font-display: swap; src: url(vendor/fonts/fira-code-latin-400-normal.woff2) format("woff2"); }
@@ -82,6 +82,7 @@ input[aria-invalid=true] { border-color: var(--bad); box-shadow: 0 0 0 1px var(-
 .viewer-wrap { position: relative; padding: 0; overflow: hidden; }
 .viewer { width: 100%; height: calc(100vh - 210px); min-height: 420px; background: linear-gradient(#fafbfd, #e6ebf1); }
 .viewer canvas { display: block; }
+.viewer-empty[hidden] { display: none; }
 .viewer-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); pointer-events: none; }
 .viewer-help { position: absolute; left: .75rem; bottom: .5rem; margin: 0; font-size: .8rem; color: var(--muted); background: rgba(255,255,255,.85); padding: .2rem .5rem; border-radius: 4px; }
 .legend { position: absolute; right: .75rem; top: .75rem; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 6px; padding: .5rem; display: grid; grid-template-columns: auto auto; grid-template-rows: auto 1fr; gap: .25rem .4rem; }
@@ -111,7 +112,7 @@ details.explain { margin-top: .75rem; font-size: .875rem; line-height: 1.5; }
 details.explain summary { cursor: pointer; min-height: 32px; font-weight: 600; color: var(--accent); }
 
 .banner { background: #fff4d6; border: 1px solid #e8c56a; color: #4a3500; border-radius: var(--radius); padding: .6rem 1rem; margin-bottom: 1rem; }
-#block-diagram { width: 100%; aspect-ratio: 760 / 470; }
+#block-diagram { width: 100%; aspect-ratio: 820 / 480; }
 .devices { display: grid; gap: .75rem; }
 .device { border: 1px solid var(--line); border-radius: 6px; padding: .75rem; }
 .device h3 { margin: 0; font-size: .95rem; }

@@ -65,6 +65,7 @@ set(UEW_TESTS
   thermal_convergence_order thermal_energy_balance thermal_no_source_linear thermal_rejects_invalid
   batch_reproducible batch_serial_parallel_agree batch_input_order batch_cancellation
   batch_worker_error batch_rejects_invalid benchmark_report median
+  agreement_detects_nan workspace_solve_matches
   stl_valid stl_malformed csv_valid csv_malformed
   backprop_initial_values backprop_finite_difference backprop_training
   hardware_discover_connect hardware_timeout_recovery)

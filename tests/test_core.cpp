@@ -194,6 +194,26 @@ void benchmarkReportIsConsistent() {
     }
 }
 
+// A NaN anywhere must fail the agreement check, never be ignored.
+void agreementDetectsNan() {
+    BatchResult a{{1.0, 2.0}}, b{{1.0, 2.0}};
+    CHECK(maxAbsDifference(a, b) == 0.0);
+    b[0][1] = NAN;
+    CHECK(maxAbsDifference(a, b) > kAgreementToleranceC);
+    b[0].pop_back();
+    CHECK(maxAbsDifference(a, b) > kAgreementToleranceC);  // shape mismatch
+}
+
+// The allocation-free path must give bit-identical results to solveRod.
+void workspaceSolveMatchesSolveRod() {
+    SolverWorkspace ws;
+    std::vector<double> T;
+    for (int n : {80, 3, 500}) {  // shrinking then growing reuses the same buffers
+        solveTemperatures(taskC(n), ws, T);
+        CHECK(T == solveRod(taskC(n)).temperature_C);
+    }
+}
+
 void medianOddAndEven() {
     CHECK_NEAR(median({3, 1, 2}), 2.0, 0.0);
     CHECK_NEAR(median({4, 1, 3, 2}), 2.5, 0.0);
@@ -351,6 +371,8 @@ const std::map<std::string, void (*)()>& registry() {
         {"batch_rejects_invalid", batchRejectsInvalidSpec},
         {"benchmark_report", benchmarkReportIsConsistent},
         {"median", medianOddAndEven},
+        {"agreement_detects_nan", agreementDetectsNan},
+        {"workspace_solve_matches", workspaceSolveMatchesSolveRod},
         {"stl_valid", stlParsesValidFile},
         {"stl_malformed", stlRejectsMalformed},
         {"csv_valid", csvParsesValidFile},

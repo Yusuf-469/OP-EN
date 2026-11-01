@@ -37,6 +37,13 @@ void validate(const RodProblem& problem);
 
 RodSolution solveRod(const RodProblem& problem);
 
+// Same solve, but reuses caller-owned buffers so repeated solves (batch runs)
+// do no heap allocation once the buffers have grown to size.
+struct SolverWorkspace {
+    std::vector<double> diag, off, rhs;
+};
+void solveTemperatures(const RodProblem& problem, SolverWorkspace& workspace, std::vector<double>& temperatures);
+
 // Analytical solution: T0 + (TL - T0) x / L + q / (2k) * x (L - x).
 double exactTemperature(const RodProblem& problem, double x_m);
 

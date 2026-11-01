@@ -29,6 +29,7 @@ function initScene() {
   camera.up.set(0, 0, 1);  // CAD convention: z up
   renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setClearColor(0xeef2f6);
   host.append(renderer.domElement);
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = !matchMedia('(prefers-reduced-motion: reduce)').matches;

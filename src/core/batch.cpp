@@ -15,11 +15,10 @@ double uniform01(std::mt19937_64& gen) {
     return static_cast<double>(gen() >> 11) * 0x1.0p-53;  // 53 random bits -> [0, 1)
 }
 
-std::vector<double> solveOne(const RodProblem& problem, RunControl* control) {
+void solveOne(const RodProblem& problem, SolverWorkspace& workspace, std::vector<double>& out, RunControl* control) {
     if (control && control->cancel.load(std::memory_order_relaxed)) throw Cancelled();
-    std::vector<double> T = solveRod(problem).temperature_C;
+    solveTemperatures(problem, workspace, out);
     if (control) control->completed.fetch_add(1, std::memory_order_relaxed);
-    return T;
 }
 
 template <typename Fn>
@@ -55,24 +54,44 @@ std::vector<RodProblem> generateBatch(const BatchSpec& spec) {
     return cases;
 }
 
+BatchResult allocateResults(const std::vector<RodProblem>& cases) {
+    BatchResult results;
+    results.reserve(cases.size());
+    for (const RodProblem& c : cases) results.emplace_back(static_cast<std::size_t>(c.elements) + 1, 0.0);
+    return results;
+}
+
+void runSerial(const std::vector<RodProblem>& cases, BatchResult& results, RunControl* control) {
+    results.resize(cases.size());
+    SolverWorkspace workspace;
+    for (std::size_t i = 0; i < cases.size(); ++i) solveOne(cases[i], workspace, results[i], control);
+}
+
 BatchResult runSerial(const std::vector<RodProblem>& cases, RunControl* control) {
-    BatchResult results(cases.size());
-    for (std::size_t i = 0; i < cases.size(); ++i) results[i] = solveOne(cases[i], control);
+    BatchResult results = allocateResults(cases);
+    runSerial(cases, results, control);
     return results;
 }
 
 BatchResult runParallel(const std::vector<RodProblem>& cases, int workers, RunControl* control) {
+    BatchResult results = allocateResults(cases);
+    runParallel(cases, workers, results, control);
+    return results;
+}
+
+void runParallel(const std::vector<RodProblem>& cases, int workers, BatchResult& results, RunControl* control) {
     if (workers < 1) throw std::invalid_argument("Worker count must be at least 1.");
-    BatchResult results(cases.size());
+    results.resize(cases.size());  // sized before any thread starts; threads never resize the outer vector
     std::atomic<std::size_t> next{0};
     std::atomic<bool> stop{false};
     std::exception_ptr firstError;
     std::mutex errorMutex;
 
     auto worker = [&] {
+        SolverWorkspace workspace;  // one per thread, reused for every case it takes
         try {
             for (std::size_t i = next.fetch_add(1); i < cases.size() && !stop; i = next.fetch_add(1))
-                results[i] = solveOne(cases[i], control);
+                solveOne(cases[i], workspace, results[i], control);
         } catch (...) {
             // An exception escaping a std::thread would terminate the process;
             // keep the first one and stop the other workers instead.
@@ -87,7 +106,6 @@ BatchResult runParallel(const std::vector<RodProblem>& cases, int workers, RunCo
     for (int w = 0; w < workers; ++w) pool.emplace_back(worker);
     for (auto& t : pool) t.join();
     if (firstError) std::rethrow_exception(firstError);
-    return results;
 }
 
 double maxAbsDifference(const BatchResult& a, const BatchResult& b) {
@@ -95,7 +113,11 @@ double maxAbsDifference(const BatchResult& a, const BatchResult& b) {
     double worst = 0.0;
     for (std::size_t i = 0; i < a.size(); ++i) {
         if (a[i].size() != b[i].size()) return INFINITY;
-        for (std::size_t j = 0; j < a[i].size(); ++j) worst = std::max(worst, std::abs(a[i][j] - b[i][j]));
+        for (std::size_t j = 0; j < a[i].size(); ++j) {
+            const double d = std::abs(a[i][j] - b[i][j]);
+            if (std::isnan(d)) return INFINITY;  // std::max would silently drop a NaN
+            worst = std::max(worst, d);
+        }
     }
     return worst;
 }
@@ -123,16 +145,20 @@ BenchmarkReport runBenchmark(const BenchmarkConfig& config, RunControl* control,
     const std::vector<RodProblem> cases = generateBatch(config.batch);  // outside every timed region
 
     stage("Warm-up (untimed)");
-    BatchResult reference;
-    report.warmup_ms = timeMs([&] { reference = runSerial(cases, control); });
-    (void)runParallel(cases, maxWorkers, control);
+    BatchResult reference = allocateResults(cases);
+    BatchResult out = allocateResults(cases);  // reused by every timed run: no allocation inside timing
+    report.warmup_ms = timeMs([&] { runSerial(cases, reference, control); });
+    runParallel(cases, maxWorkers, out, control);
+
+    // NaN-fill before each run so a slot the run failed to write cannot pass the agreement check.
+    const auto poison = [&] { for (auto& field : out) std::fill(field.begin(), field.end(), NAN); };
 
     TimingRow serial;
     serial.variant = "serial";
     for (int r = 0; r < config.repetitions; ++r) {
         stage("Serial run " + std::to_string(r + 1) + "/" + std::to_string(config.repetitions));
-        BatchResult out;
-        serial.samples_ms.push_back(timeMs([&] { out = runSerial(cases, control); }));
+        poison();
+        serial.samples_ms.push_back(timeMs([&] { runSerial(cases, out, control); }));
         serial.max_abs_diff_C = std::max(serial.max_abs_diff_C, maxAbsDifference(reference, out));
     }
     serial.median_ms = median(serial.samples_ms);
@@ -147,8 +173,8 @@ BenchmarkReport runBenchmark(const BenchmarkConfig& config, RunControl* control,
         for (int r = 0; r < config.repetitions; ++r) {
             stage("Pool p=" + std::to_string(p) + " run " + std::to_string(r + 1) + "/" +
                   std::to_string(config.repetitions));
-            BatchResult out;
-            row.samples_ms.push_back(timeMs([&] { out = runParallel(cases, p, control); }));
+            poison();
+            row.samples_ms.push_back(timeMs([&] { runParallel(cases, p, out, control); }));
             row.max_abs_diff_C = std::max(row.max_abs_diff_C, maxAbsDifference(reference, out));
         }
         row.median_ms = median(row.samples_ms);

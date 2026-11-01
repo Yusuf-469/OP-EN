@@ -105,6 +105,18 @@ void writeThermalStudy(JsonWriter& json, const std::vector<StudyEntry>& study) {
         for (double x : s.solution.x_m) json.value(x);
         json.endArray().key("T_C").beginArray();
         for (double t : s.solution.temperature_C) json.value(t);
+        json.endArray();
+        // Pointwise error T_FE(x) - T_exact(x), sampled inside every element: zero
+        // at the nodes, largest at the midpoints.
+        constexpr int kSamplesPerElement = 8;
+        const double h = s.problem.length_m / s.problem.elements;
+        json.key("error_x_m").beginArray();
+        for (int i = 0; i <= s.problem.elements * kSamplesPerElement; ++i) json.value(i * h / kSamplesPerElement);
+        json.endArray().key("error_C").beginArray();
+        for (int i = 0; i <= s.problem.elements * kSamplesPerElement; ++i) {
+            const double x = i * h / kSamplesPerElement;
+            json.value(interpolate(s.solution, x) - exactTemperature(s.problem, x));
+        }
         json.endArray().endObject();
     }
     json.endArray();

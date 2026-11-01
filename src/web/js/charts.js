@@ -43,7 +43,18 @@ function extent(values, log) {
  * opts:   { title, xLabel, yLabel, logX, logY }
  */
 export function lineChart(container, series, opts) {
-  const W = 760, H = 380, m = { l: 78, r: 16, t: 34, b: 58 };
+  // Draw at the container's real width so text stays at its nominal size;
+  // redraw when the container is resized or a hidden tab becomes visible.
+  if (!container.chartObserver) {
+    container.chartObserver = new ResizeObserver(() => {
+      if (container.clientWidth && container.clientWidth !== container.chartWidth) lineChart(container, ...container.chartArgs);
+    });
+    container.chartObserver.observe(container);
+  }
+  container.chartArgs = [series, opts];
+  container.chartWidth = container.clientWidth;
+  const W = Math.max(container.clientWidth || 760, 320), H = Math.round(Math.min(Math.max(W * 0.55, 260), 400));
+  const m = { l: 74, r: 16, t: 14 + 15 * Math.ceil(series.length / 3), b: 54 };
   const [x0, x1] = extent(series.flatMap(s => s.x), opts.logX);
   const [y0, y1] = extent(series.flatMap(s => s.y), opts.logY);
   const scale = (v, a, b, p0, p1, log) => {
@@ -87,7 +98,7 @@ export function lineChart(container, series, opts) {
       }
     }
     // Legend above the plot area, three entries per row.
-    const lx = m.l + 10 + (i % 3) * 210, ly = 13 + Math.floor(i / 3) * 15;
+    const lx = m.l + 10 + (i % 3) * (W - m.l - m.r) / 3, ly = 13 + Math.floor(i / 3) * 15;
     root.append(svg('line', { x1: lx, x2: lx + 22, y1: ly - 4, y2: ly - 4, stroke: color, 'stroke-width': 3,
       'stroke-dasharray': s.dash || '' }),
     svg('text', { x: lx + 28, y: ly, 'font-size': 12 }, s.name));

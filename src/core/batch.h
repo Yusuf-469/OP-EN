@@ -41,10 +41,19 @@ void validate(const BatchSpec& spec);
 // k in [5, 50] W/(m K), q in [1e3, 5e4] W/m^3, other parameters as in Task C.
 std::vector<RodProblem> generateBatch(const BatchSpec& spec);
 
-BatchResult runSerial(const std::vector<RodProblem>& cases, RunControl* control = nullptr);
+// Result storage with every slot already sized, so the timed region contains
+// no allocation or first-touch page faults.
+BatchResult allocateResults(const std::vector<RodProblem>& cases);
+
+// Each solve reuses one SolverWorkspace per thread (no per-solve heap allocation).
+void runSerial(const std::vector<RodProblem>& cases, BatchResult& results, RunControl* control = nullptr);
 
 // Fixed pool of `workers` std::threads pulling case indices from an atomic
 // counter; each result is written to its own slot, so output order is the input order.
+void runParallel(const std::vector<RodProblem>& cases, int workers, BatchResult& results, RunControl* control = nullptr);
+
+// Convenience forms that allocate and return the results.
+BatchResult runSerial(const std::vector<RodProblem>& cases, RunControl* control = nullptr);
 BatchResult runParallel(const std::vector<RodProblem>& cases, int workers, RunControl* control = nullptr);
 
 double maxAbsDifference(const BatchResult& a, const BatchResult& b);

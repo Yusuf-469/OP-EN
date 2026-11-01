@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Unified Engineering Workbench</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 17l6-6 4 4 8-8' fill='none' stroke='%230b5cad' stroke-width='3'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="app.css">
   <script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
 </head>
@@ -108,7 +109,10 @@
       </details>
     </aside>
     <div class="stack">
-      <div class="panel"><h2>Temperature along the rod</h2><div id="chart-T" class="chart"></div></div>
+      <div class="grid-2">
+        <div class="panel"><h2>Temperature along the rod</h2><div id="chart-T" class="chart"></div></div>
+        <div class="panel"><h2>Pointwise error: zero at nodes, peaks at midpoints</h2><div id="chart-err" class="chart"></div></div>
+      </div>
       <div class="grid-2">
         <div class="panel"><h2>Mesh convergence (log–log)</h2><div id="chart-conv" class="chart"></div></div>
         <div class="panel"><h2>Verification table</h2><div id="thermal-table" class="table-wrap"></div><p id="energy" class="hint"></p></div>

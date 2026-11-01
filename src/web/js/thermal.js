@@ -38,6 +38,10 @@ function render(study) {
     color: PALETTE[(i + 1) % PALETTE.length], dash: '6 3', markers: m.N <= 40 }));
   lineChart($('chart-T'), series, { title: 'Temperature along the rod: FE vs exact', xLabel: 'Position x (m)', yLabel: 'Temperature T (°C)' });
 
+  lineChart($('chart-err'), study.meshes.map((m, i) => ({ name: `N = ${m.N}`, x: m.error_x_m, y: m.error_C,
+    color: PALETTE[(i + 1) % PALETTE.length] })),
+  { title: 'Pointwise FE error along the rod', xLabel: 'Position x (m)', yLabel: 'T_FE − T_exact (°C)' });
+
   const h = study.meshes.map(m => m.h_m), e = study.meshes.map(m => m.max_midpoint_error_C);
   const ref = h.map(v => e[0] * (v / h[0]) ** 2);
   lineChart($('chart-conv'), [
