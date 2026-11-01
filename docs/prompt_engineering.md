@@ -5,7 +5,8 @@ candidate set the requirements, judged the output, and made the decisions listed
 requested by the candidate and drafted with Claude Code (disclosed in `docs/ai_use_log.md`).
 **Read it with the labels in mind:**
 
-* **v1 (as used):** the master prompt from the first, ChatGPT-based prototype attempt. It is stored unedited in
+* **v1 (as used):** the master prompt from the first prototype attempt, drafted by the candidate and expanded with
+  ChatGPT. It is stored unedited in
   `docs/prompts/master_prompt_v1.md`. The prompts sent in the Claude Code session that produced this submission are
   quoted word for word in `docs/ai_use_log.md`.
 * **v2 (refined, written afterwards):** the staged prompts below were written *after* the work, as a review of
@@ -18,7 +19,7 @@ Each item is on record in the session or in the repository; none is reconstructe
 
 | Decision by the candidate | Why it mattered | Evidence |
 |---|---|---|
-| Wrote the v1 specification: the rubric and shortlisting gates, the priority order, and the anti-fabrication rules. | Set what "done" meant and which marks to protect first. | `docs/prompts/master_prompt_v1.md` |
+| Drafted the requirements for v1 and had ChatGPT expand them into the master prompt (rubric and gates, priority order, anti-fabrication rules). | Set what "done" meant and which marks to protect first. | `docs/prompts/master_prompt_v1.md` |
 | Judged the first prototype not good enough to submit and asked for a full rework, with the prototype as the reference for what to improve. | The prototype's defects (agreement checked on one node, Linux benchmarks, `Launch.exe` never run) were then fixed, not patched. | AI-use log, prompt 1; issue list under the defect table |
 | Identified the delivery constraint (one PDF ≤ 1 MB) before any code was written and asked for a strategy. | Led to the hosted ZIP + SHA-256 + evidence-PDF design. | AI-use log, prompt 1 |
 | Directed the use of specialist review tools (UI/accessibility rules, C++ review agent). | The C++ review found 10 robustness defects; the accessibility audit found 2 contrast failures. All were fixed with tests. | AI-use log, defect 12; `tests/contrast_check.py` |
