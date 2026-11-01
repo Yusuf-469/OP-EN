@@ -64,7 +64,7 @@
   <text x="430" y="355" font-weight="700" font-size="12">JTAG adapter · SEGGER J-Link EDU Mini</text>
   <text x="430" y="373">Host: USB 2.0. Debug probe only, no workload</text>
   <text x="430" y="390">Target: 10-pin 1.27 mm Cortex Debug → MCU</text>
-  <text x="430" y="407">Senses VTref (1.2–5 V), drives at that level</text>
+  <text x="430" y="407">3.3 V target I/O (5 V tolerant); reads VTref</text>
   <text x="430" y="424">Does not power the target; one target at a time</text>
   <text x="430" y="443" fill="#4d5b6a">Telemetry: VTref, TCK frequency, chain length</text>
 

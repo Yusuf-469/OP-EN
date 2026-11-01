@@ -95,7 +95,7 @@ public:
     DeviceDescriptor descriptor() const override {
         return {"jtag0", DeviceKind::JtagAdapter, "SEGGER J-Link EDU Mini (assumed)",
                 "USB 2.0 to host; 10-pin 1.27 mm Cortex Debug header to target",
-                "Follows target VTref (1.2-5 V); does not power the target"};
+                "3.3 V target interface (5 V tolerant), reads VTref; does not power the target"};
     }
     std::vector<Capability> capabilities() const override {
         return {{"jtag", "Drives TCK/TMS/TDI/nTRST, samples TDO of ONE target at a time"},

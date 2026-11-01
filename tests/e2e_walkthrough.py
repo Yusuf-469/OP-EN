@@ -2,7 +2,7 @@
 
 Starts Launch.exe headless, drives the real UI in Microsoft Edge via
 Playwright, asserts each step, and writes screenshots plus a timestamped log
-to evidence/walkthrough/. Requires: pip install playwright==1.48.0 (uses the
+to evidence/walkthrough/. Requires: pip install playwright==1.64.1 (uses the
 Edge already installed on Windows 11; no browser download needed).
 
 Usage: python tests/e2e_walkthrough.py <path-to-Launch.exe> [out_dir]
