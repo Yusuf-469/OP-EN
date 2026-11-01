@@ -44,7 +44,7 @@ Copy-Item build/uew_cli.exe "$stage/app"
 
 # Version-control evidence.
 New-Item -ItemType Directory -Force "$stage/evidence/git" | Out-Null
-Invoke-Checked "git bundle" { git bundle create "$stage/evidence/git/repository.bundle" --all }
+Invoke-Checked "git bundle" { git bundle create "$stage/evidence/git/repository.bundle" --branches }  # not --all/--tags: remote-tracking refs and fetched tags can hold stale history
 git log --date=iso --stat --pretty=format:"commit %h%nDate:   %ad%n%n    %s%n%n%w(0,4,4)%b" |
   Set-Content "$stage/evidence/git/commit_log.txt" -Encoding utf8
 
