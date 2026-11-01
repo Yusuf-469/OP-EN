@@ -145,15 +145,31 @@ def link(cfg, key, label):
     return f'<a href="{esc(url)}">{esc(url)}</a>' if url else placeholder(f"add {label} in docs/report/submission.json")
 
 
+def repo_links(cfg, paths):
+    """Clickable GitHub links pinned to this commit, so the reviewer sees exactly the submitted files."""
+    base = (cfg.get("repo_url") or "").removesuffix(".git")
+    if not base:
+        return ", ".join(f"<code>{esc(p)}</code>" for p in paths)
+    ref = git("rev-parse", "HEAD")
+    url = lambda p: f"{base}/commits/{ref}" if p == "commits" else f"{base}/{'tree' if (ROOT / p).is_dir() else 'blob'}/{ref}/{p}"
+    return ", ".join(f'<a href="{esc(url(p))}">{esc(p)}</a>' for p in paths)
+
+
 def cover(cfg, starts, perf):
     cid = esc(cfg.get("candidate_id") or "CandidateID")
     pages = lambda part: f"{starts[part][0]}&ndash;{starts[part][1]}" if starts[part][0] != starts[part][1] else str(starts[part][0])
-    rubric = [("Interface / webpage design", "Report §1&ndash;2; App. B"), ("C++ backend and testing", "Report §1&ndash;2, §8; App. C"),
-              ("Folder architecture", "README §3, §6 (ZIP)"), ("Code readability", "src/ (ZIP)"), ("Version control", "App. C; evidence/git/"),
-              ("Thermal FEA and adoption", "Report §4; docs/thermal_fea.md"), ("CAD / ANSYS visualisation", "Report §3; App. B; data/PROVENANCE.md"),
-              ("Multicore performance", "Report §5; results/performance/"), ("Embedded integration", "Report §6; docs/embedded_design.md"),
-              ("Backpropagation", "Report §7; App. A"), ("Prompt engineering / AI judgement", "Report §8; docs/ai_use_log.md"),
-              ("One-click delivery / report", "Launch.exe, .vscode/ (ZIP); this PDF")]
+    rubric = [("Interface / webpage design", "Report §1&ndash;2; App. B", ["src/web"]),
+              ("C++ backend and testing", "Report §1&ndash;2, §8; App. C", ["src/core", "src/app", "tests"]),
+              ("Folder architecture", "README §3, §6", ["README.md"]), ("Code readability", "", ["src"]),
+              ("Version control", "App. C", ["commits"]),
+              ("Thermal FEA and adoption", "Report §4", ["docs/thermal_fea.md", "src/core/thermal_fea.cpp", "results/thermal"]),
+              ("CAD / ANSYS visualisation", "Report §3; App. B", ["data", "src/core/geometry_io.cpp"]),
+              ("Multicore performance", "Report §5", ["src/core/batch.cpp", "results/performance"]),
+              ("Embedded integration", "Report §6", ["docs/embedded_design.md", "src/core/hardware.cpp"]),
+              ("Backpropagation", "Report §7; App. A", ["src/core/backprop.cpp", "docs/backprop_worked_values.md"]),
+              ("Prompt engineering / AI judgement", "Report §8", ["docs/ai_use_log.md"]),
+              ("One-click delivery / report", "this PDF; Launch.exe in ZIP", [".vscode", "src/app/launcher_win.cpp"])]
+    mirror = f'<tr><th>Mirror download (Google Drive)</th><td>{link(cfg, "mirror_url", "")}</td></tr>' if cfg.get("mirror_url") else ""
     video = link(cfg, "video_url", "video URL") if cfg.get("video_url") else "Timestamped screenshot walkthrough with logs: Appendix B (accepted equivalent)"
     sha = f'<code>{esc(cfg["zip_sha256"])}</code>' if cfg.get("zip_sha256") else placeholder("SHA-256 from dist/*.zip.sha256")
     return f"""<h1>Unified Engineering Workbench &mdash; Submission</h1>
@@ -163,7 +179,7 @@ def cover(cfg, starts, perf):
 evidence. The SHA-256 lets you confirm the downloaded ZIP is exactly the one submitted (PowerShell: <code>Get-FileHash {cid}_Workbench.zip</code>).</div>
 <table>
 <tr><th style="width:27%">Application package (ZIP)</th><td>{link(cfg, "zip_url", "ZIP download URL")}<br>SHA-256: {sha} {esc(cfg.get("zip_size", ""))}</td></tr>
-<tr><th>Mirror download (Google Drive)</th><td>{link(cfg, "mirror_url", "Drive mirror URL")}</td></tr>
+{mirror}
 <tr><th>Source repository</th><td>{link(cfg, "repo_url", "repository URL")}</td></tr>
 <tr><th>Demonstration</th><td>{video}</td></tr>
 </table>
@@ -184,7 +200,7 @@ evidence. The SHA-256 lets you confirm the downloaded ZIP is exactly the one sub
 400 &times; 20,000-element batch: speed-up {perf["SPEEDUP4"]}&times; on 4 workers, serial/parallel agreement {perf["AGREEMENT"]}.
 Gradients match central differences to ~10<sup>&minus;10</sup>. 110 automated checks pass (C++ unit/numerical/negative, HTTP integration, browser E2E, file size, WCAG contrast).</p>
 <h2>Rubric &rarr; evidence map</h2>
-<table><tr><th>Criterion</th><th>Where to look</th></tr>{"".join(f"<tr><td>{c}</td><td>{e}</td></tr>" for c, e in rubric)}</table>"""
+<table><tr><th>Criterion</th><th>In this PDF</th><th>On GitHub (click)</th></tr>{"".join(f"<tr><td>{c}</td><td>{e}</td><td>{repo_links(cfg, p)}</td></tr>" for c, e, p in rubric)}</table>"""
 
 
 def main():
@@ -232,7 +248,7 @@ def main():
         raise SystemExit("ERROR: still over 1 MB; reduce screenshots or scan resolution.")
     if counts["report"] > 6:
         raise SystemExit(f"ERROR: report is {counts['report']} pages; the limit is 6.")
-    missing = [k for k in ("candidate_id", "zip_url", "mirror_url", "repo_url", "zip_sha256") if not cfg.get(k)] + ([] if has_scans else ["handwritten scans"])
+    missing = [k for k in ("candidate_id", "zip_url", "repo_url", "zip_sha256") if not cfg.get(k)] + ([] if has_scans else ["handwritten scans"])
     if missing:
         print("DRAFT - still missing:", ", ".join(missing))
 
