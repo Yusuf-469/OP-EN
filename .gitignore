@@ -1,0 +1,10 @@
+﻿build/
+dist/
+*.zip
+graphify-out/
+logs/
+/Launch.exe
+/app/
+.vs/
+results/size_test/
+__pycache__/
