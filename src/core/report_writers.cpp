@@ -78,6 +78,19 @@ std::string thermalMidpointsCsv(const std::vector<StudyEntry>& study) {
     return csv;
 }
 
+std::string errorProfileCsv(const std::vector<StudyEntry>& study, int samplesPerElement) {
+    std::string csv = "N,x_m,T_fe_minus_exact_C\n";
+    for (const auto& s : study) {
+        const int samples = s.problem.elements * samplesPerElement;
+        for (int i = 0; i <= samples; ++i) {
+            const double x = s.problem.length_m * i / samples;
+            csv += csvRow({std::to_string(s.problem.elements), num(x),
+                           num(interpolate(s.solution, x) - exactTemperature(s.problem, x))});
+        }
+    }
+    return csv;
+}
+
 std::string convergenceCsv(const std::vector<StudyEntry>& study) {
     std::string csv = "N,h_m,max_nodal_error_C,max_midpoint_error_C,observed_order\n";
     for (std::size_t i = 0; i < study.size(); ++i) {

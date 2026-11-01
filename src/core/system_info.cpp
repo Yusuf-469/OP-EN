@@ -59,6 +59,18 @@ std::string windowsVersion() {
 
 }  // namespace
 
+bool disablePowerThrottling() {
+#ifdef _WIN32
+    PROCESS_POWER_THROTTLING_STATE state{};
+    state.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+    state.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
+    state.StateMask = 0;  // control bit set + state bit clear = never throttle execution speed
+    return SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &state, sizeof state) != 0;
+#else
+    return false;
+#endif
+}
+
 SystemInfo querySystemInfo() {
     SystemInfo info;
     info.logical_cpus = std::thread::hardware_concurrency();

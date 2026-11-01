@@ -12,6 +12,7 @@
 #include <string>
 
 #include "api_server.h"
+#include "system_info.h"
 
 namespace fs = std::filesystem;
 
@@ -109,6 +110,7 @@ void fail(const std::wstring& message) {
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
     SetProcessDPIAware();
+    const bool throttlingOff = uew::disablePowerThrottling();  // see system_info.h
     int argc = 0;
     wchar_t** argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     bool noBrowser = false;
@@ -122,6 +124,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand) {
 
     const fs::path exeDir = exeDirectory();
     openLog(exeDir);
+    if (!throttlingOff) log("Warning: could not opt out of Windows power throttling; benchmark timings may vary.");
     const fs::path webRoot = findWebRoot(exeDir);
     if (webRoot.empty()) {
         fail(L"The web UI folder 'app\\web' was not found next to Launch.exe.\n"

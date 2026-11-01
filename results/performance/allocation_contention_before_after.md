@@ -41,3 +41,26 @@ process heap / Windows memory manager, which serialises threads. Larger meshes -
 | | pool p=4 | 43.1 43.0 44.0 43.5 43.0 | **3.65** |
 
 Serial time also fell (169 -> 149 ms), confirming allocation was a cost even without threads. Hypothesis supported.
+
+# Second issue: bimodal p=4 timings (Windows power throttling)
+
+After the allocation fix, repeated full benchmarks showed p=4 samples that were either ~39 ms or ~135 ms
+(about serial speed), switching part-way through a run; p=1..3 were unaffected. Four consecutive runs, p=4 samples (ms):
+
+    run 1: 39 39 39 135 135
+    run 2: 39 39 39 39 134
+    run 3: 140 133 141 136 135
+    run 4: 39 39 38 39 112
+
+Hypothesis: Windows 11 EcoQoS power throttling of a background (windowless) process on this hybrid
+P-core/E-core CPU moves its threads to efficiency cores at low clock. Test: opt the process out with
+`SetProcessInformation(ProcessPowerThrottling, EXECUTION_SPEED control bit set, state bit clear)`
+(`disablePowerThrottling()` in src/core/system_info.cpp), change nothing else, repeat:
+
+    run 1: 39 38 39 39 39
+    run 2: 40 39 39 38 38
+    run 3: 39 38 40 40 38
+    run 4: 39 39 40 40 39
+
+20/20 samples now 38-40 ms, so the hypothesis is supported. Remaining limitation: single-thread runs still vary
+(150-220 ms), consistent with one thread migrating between P- and E-cores; medians of 5 runs are reported.

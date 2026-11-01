@@ -3,6 +3,7 @@
 // JSON (requests use query parameters or raw file bodies), so a full JSON
 // library is not needed.
 
+#include <charconv>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -37,9 +38,9 @@ public:
     JsonWriter& value(double number, int significantDigits = 12) {
         separate();
         if (!std::isfinite(number)) { out_ += "null"; return *this; }
-        char buffer[40];
-        std::snprintf(buffer, sizeof buffer, "%.*g", significantDigits, number);
-        out_ += buffer;
+        char buffer[40];  // to_chars: locale-independent and much faster than snprintf for large arrays
+        const auto result = std::to_chars(buffer, buffer + sizeof buffer, number, std::chars_format::general, significantDigits);
+        out_.append(buffer, result.ptr);
         return *this;
     }
 

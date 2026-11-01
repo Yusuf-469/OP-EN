@@ -18,4 +18,10 @@ struct SystemInfo {
 
 SystemInfo querySystemInfo();
 
+// Windows 11 may apply EcoQoS power throttling to a background process and
+// move its threads to efficiency cores at low clock, which made benchmark runs
+// bimodal. This opts the process out (documented SetProcessInformation API).
+// Returns false if the OS refused or the platform is not Windows.
+bool disablePowerThrottling();
+
 }  // namespace uew

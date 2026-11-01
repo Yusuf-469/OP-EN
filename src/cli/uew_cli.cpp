@@ -53,6 +53,7 @@ void thermalStudy(const std::string& dir) {
     writeFile(dir + "/thermal_nodes.csv", thermalNodesCsv(study));
     writeFile(dir + "/thermal_midpoints.csv", thermalMidpointsCsv(study));
     writeFile(dir + "/thermal_convergence.csv", convergenceCsv(study));
+    writeFile(dir + "/thermal_error_profile.csv", errorProfileCsv(study, 8));
     std::cout << convergenceCsv(study);
 }
 
@@ -149,6 +150,7 @@ int run(const std::vector<std::string>& args) {
 
 int main(int argc, char** argv) {
     try {
+        if (!disablePowerThrottling()) std::cerr << "note: could not opt out of power throttling\n";
         return run(std::vector<std::string>(argv, argv + argc));
     } catch (const std::exception& e) {
         std::cerr << "ERROR: " << e.what() << "\n";

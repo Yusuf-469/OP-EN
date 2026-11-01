@@ -25,6 +25,7 @@ std::vector<StudyEntry> runThermalStudy(const RodProblem& base, const std::vecto
 
 std::string thermalNodesCsv(const std::vector<StudyEntry>& study);      // N,node,x_m,T_fe_C,T_exact_C,abs_error_C
 std::string thermalMidpointsCsv(const std::vector<StudyEntry>& study);  // N,element,x_mid_m,T_fe_C,T_exact_C,abs_error_C
+std::string errorProfileCsv(const std::vector<StudyEntry>& study, int samplesPerElement);  // N,x_m,T_fe_minus_exact_C
 std::string convergenceCsv(const std::vector<StudyEntry>& study);       // N,h_m,max errors,observed order
 
 void writeThermalStudy(JsonWriter& json, const std::vector<StudyEntry>& study);

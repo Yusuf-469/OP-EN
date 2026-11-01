@@ -1,0 +1,11 @@
+STL 1000 triangles: OK triangles=1000 bytes=237037 parse_ms=0.5766
+STL 100000 triangles: OK triangles=100000 bytes=23700037 parse_ms=56.4839
+STL 500000 triangles: OK triangles=500000 bytes=118500037 parse_ms=257.934
+CSV 10000 nodes: OK nodes=10000 bytes=410899 parse_ms=4.8371
+CSV 1000000 nodes: OK nodes=1000000 bytes=43086522 parse_ms=389.954
+CSV 2000000 nodes: OK nodes=2000000 bytes=87284113 parse_ms=820.951
+CSV 2000001 nodes (over limit, must be rejected): ERROR: Line 2000002: more than 2000000 nodes (tested limit).
+API upload STL 100000 items: 23.7 MB in, 2.8 MB JSON out, 0.18 s round trip
+API upload STL 500000 items: 118.5 MB in, 15.5 MB JSON out, 2.15 s round trip
+API upload CSV 1000000 items: 43.1 MB in, 25.7 MB JSON out, 2.63 s round trip
+API upload CSV 2000000 items: 87.3 MB in, 56.4 MB JSON out, 5.41 s round trip
